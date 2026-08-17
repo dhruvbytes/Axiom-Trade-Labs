@@ -1,0 +1,60 @@
+/* Basic Reset */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; padding: 20px; }
+
+.container { max-width: 900px; margin: 0 auto; }
+
+/* Header */
+header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #ddd; }
+h1 span { font-size: 0.5em; color: #777; background: #eee; padding: 4px 8px; border-radius: 4px; vertical-align: middle;}
+
+/* Status Badge */
+.status-badge { padding: 6px 12px; border-radius: 20px; font-size: 0.9em; font-weight: bold; }
+.online { background-color: #d4edda; color: #155724; }
+.offline { background-color: #f8d7da; color: #721c24; }
+
+/* Error Banner */
+.error-banner { background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin-bottom: 20px; text-align: center; font-weight: bold; }
+.hidden { display: none; }
+
+/* Cards */
+.card-row { display: flex; gap: 20px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
+.card { flex: 1; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;}
+.card h3 { color: #666; font-size: 0.9em; margin-bottom: 10px; text-transform: uppercase; }
+.card h2 { color: #2c3e50; font-size: 1.8em; }
+
+/* Button */
+.primary-btn { padding: 15px 25px; border: none; border-radius: 8px; background-color: #007bff; color: white; font-size: 1em; cursor: pointer; transition: 0.2s; font-weight: bold; height: 100%;}
+.primary-btn:hover { background-color: #0056b3; }
+.primary-btn:disabled { background-color: #aaa; cursor: not-allowed; }
+
+/* Table */
+.table-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.table-container h3 { margin-bottom: 15px; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+th, td { padding: 12px; border-bottom: 1px solid #ddd; }
+th { background-color: #f8f9fa; color: #555; }
+.empty-state { text-align: center; color: #888; font-style: italic; }
+
+/* P&L Colors */
+.profit { color: #28a745; font-weight: bold; }
+.loss { color: #dc3545; font-weight: bold; }
+
+/* AI Chat Section */
+.chat-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 20px; }
+.chat-container h3 { margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px;}
+
+.chat-box { height: 300px; overflow-y: auto; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; }
+
+.message { max-width: 80%; padding: 10px 15px; border-radius: 8px; line-height: 1.4; font-size: 0.95em; word-wrap: break-word; }
+.system-msg { align-self: center; background-color: #e9ecef; color: #495057; font-size: 0.85em; text-align: center; max-width: 90%; }
+.user-msg { align-self: flex-end; background-color: #007bff; color: white; border-bottom-right-radius: 0; }
+.ai-msg { align-self: flex-start; background-color: #fff; color: #333; border: 1px solid #ddd; border-bottom-left-radius: 0; }
+
+.ai-proposal { background-color: #f0f8ff; border-left: 4px solid #007bff; padding: 10px; margin-top: 5px; border-radius: 4px; font-family: monospace; font-size: 0.9em; white-space: pre-wrap; }
+.ai-error { background-color: #fff3f3; border-left: 4px solid #dc3545; color: #dc3545; }
+
+.chat-input-area { display: flex; gap: 10px; }
+.chat-input-area input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 1em; }
+.chat-input-area input:focus { outline: none; border-color: #007bff; }
+#send-btn { padding: 12px 20px; height: auto;}

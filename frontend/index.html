@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Trading Lab - Step 2</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <header>
+            <h1>AI Trading Lab <span>Step 2</span></h1>
+            <div id="health-status" class="status-badge offline">Backend: Checking...</div>
+        </header>
+
+        <!-- Error Banner (Hidden by default) -->
+        <div id="error-banner" class="error-banner hidden"></div>
+
+        <!-- Dashboard Section -->
+        <main>
+            <div class="card-row">
+                <div class="card">
+                    <h3>Portfolio Value</h3>
+                    <h2 id="portfolio-value">$--.--</h2>
+                </div>
+                <div class="card">
+                    <h3>Buying Power</h3>
+                    <h2 id="buying-power">$--.--</h2>
+                </div>
+                <button id="refresh-btn" class="primary-btn">Refresh Data</button>
+            </div>
+
+            <!-- Positions Table -->
+            <div class="table-container">
+                <h3>Current Positions</h3>
+                <table id="positions-table">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Quantity</th>
+                            <th>Market Value</th>
+                            <th>Unrealized P&L</th>
+                        </tr>
+                    </thead>
+                    <tbody id="positions-body">
+                        <tr>
+                            <td colspan="4" class="empty-state">Loading data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- AI Chat Section -->
+            <div class="chat-container">
+                <h3>🤖 AI Trading Assistant</h3>
+                
+                <div class="chat-box" id="chat-box">
+                    <div class="message system-msg">
+                        Hello! I am your AI Trading Assistant. Ask me to analyze a stock or check your portfolio.
+                    </div>
+                    <!-- Messages will appear here -->
+                </div>
+
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input" placeholder="e.g., Analyze AAPL and tell me if I should buy..." autocomplete="off">
+                    <button id="send-btn" class="primary-btn">Send</button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
