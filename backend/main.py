@@ -6,6 +6,7 @@ from typing import List
 # Import humara custom Alpaca client aur naya AI Agent
 from backend import alpaca_client
 from backend import agent
+from backend.risk_engine import master_risk_engine
 
 app = FastAPI(title="AI Trading Lab API")
 
@@ -69,18 +70,58 @@ def get_portfolio():
 @app.post("/api/chat")
 async def chat_with_agent(request: ChatRequest):
     """
-    Receives a message from the UI, sends it to the Gemini Agent, 
-    and returns the structured TradeProposal JSON.
+    Receives a message, gets AI proposal, and runs it through the Risk Engine.
     """
     try:
-        # Agent ka process_trading_request function async hai, isliye await lagaya
+        # 1. Get AI Proposal
         proposal = await agent.process_trading_request(request.message)
-        return {"response": proposal}
+        
+        # If agent failed/hallucinated, return early
+        if "error" in proposal:
+            return {"proposal": proposal, "risk_evaluation": None}
+            
+        # 2. Fetch real account state for the Risk Engine
+        # Call the methods on the actual trading_client instance
+        account = alpaca_client.trading_client.get_account()
+        positions = alpaca_client.trading_client.get_all_positions()
+        
+        account_equity = float(account.equity)
+        buying_power = float(account.buying_power)
+        last_equity = float(account.last_equity)
+        
+        # Calculate actual daily drawdown
+        daily_loss_pct = 0.0
+        if last_equity > 0 and account_equity < last_equity:
+            daily_loss_pct = (last_equity - account_equity) / last_equity
+            
+        formatted_positions = [{"symbol": p.symbol, "market_value": float(p.market_value)} for p in positions]
+
+        # 3. Run the Risk Engine Pipeline
+        # Note: For this MVP, we use static fallback values for SPY Market Data 
+        # to keep the endpoint fast and avoid complex historical API rate limits.
+        evaluation = master_risk_engine.evaluate_proposal(
+            proposal=proposal,
+            account_equity=account_equity,
+            buying_power=buying_power,
+            daily_loss_pct=daily_loss_pct,
+            current_positions=formatted_positions,
+            spy_price=550.0,    # DEMO DEFAULT (Mocked)
+            spy_sma_50=540.0,   # DEMO DEFAULT (Mocked Trend is UP)
+            spy_atr_14=5.0,     # DEMO DEFAULT (Mocked Low Volatility)
+            asset_bars_14d=None # Bypasses ATR check for MVP speed
+        )
+        
+        # 4. Return both Proposal AND Risk Evaluation
+        return {
+            "proposal": proposal,
+            "risk_evaluation": evaluation.model_dump()
+        }
+        
     except Exception as e:
-        print(f"Agent Error: {e}")
+        print(f"Agent/Risk Error: {e}")
         raise HTTPException(
             status_code=500, 
-            detail=f"Agent failed to process request. Check backend logs."
+            detail=f"Failed to process request. Check backend logs."
         )
 
 # Terminal se direct run karne ke liye fallback

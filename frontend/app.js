@@ -115,48 +115,79 @@ async function fetchPortfolio() {
 
 // --- Chat Functions ---
 
-function addMessage(text, sender) {
+function addMessage(payload, sender) {
     const msgDiv = document.createElement('div');
     msgDiv.classList.add('message');
     
     if (sender === 'user') {
         msgDiv.classList.add('user-msg');
-        msgDiv.textContent = text;
+        msgDiv.textContent = payload;
     } else if (sender === 'ai') {
         msgDiv.classList.add('ai-msg');
         
-        // Check if response is our JSON Proposal
-        if (typeof text === 'object' && text !== null) {
-            if (text.error) {
+        if (typeof payload === 'object' && payload !== null) {
+            // Check for top-level errors (like Agent failing completely)
+            if (payload.error) {
                 msgDiv.classList.add('ai-error');
-                msgDiv.innerHTML = `<strong>Error:</strong> ${text.error}<br><small>${text.details || ''}</small>`;
-            } else {
-                // Format the TradeProposal cleanly
-                const actionColor = text.action === 'BUY' ? 'profit' : (text.action === 'SELL' ? 'loss' : '');
-                msgDiv.innerHTML = `
+                msgDiv.innerHTML = `<strong>Error:</strong> ${payload.error}<br><small>${payload.details || ''}</small>`;
+            } 
+            // Check for our new combined structure { proposal: {}, risk_evaluation: {} }
+            else if (payload.proposal && payload.risk_evaluation) {
+                const prop = payload.proposal;
+                const risk = payload.risk_evaluation;
+                
+                // 1. Render AI Proposal
+                const actionColor = prop.action === 'BUY' ? 'profit' : (prop.action === 'SELL' ? 'loss' : '');
+                let htmlContent = `
                     <div style="margin-bottom: 8px;">
-                        <strong>Action:</strong> <span class="${actionColor}">${text.action}</span> 
-                        ${text.asset !== 'NONE' ? `<strong>${text.quantity}</strong> shares of <strong>${text.asset}</strong>` : ''}
+                        <strong>🤖 AI Proposal:</strong> <span class="${actionColor}">${prop.action}</span> 
+                        ${prop.asset !== 'NONE' ? `<strong>${prop.quantity}</strong> shares of <strong>${prop.asset}</strong>` : ''}
                     </div>
                     <div style="margin-bottom: 8px;">
-                        <strong>Estimated Price:</strong> $${text.estimated_price} | <strong>Confidence:</strong> ${text.confidence_score}/10
+                        <strong>Estimated Price:</strong> $${prop.estimated_price} | <strong>Confidence:</strong> ${prop.confidence_score}/10
                     </div>
                     <div style="margin-bottom: 8px;">
-                        <strong>Reasoning:</strong> ${text.reasoning_summary}
-                    </div>
-                    <div style="font-size: 0.8em; color: #666;">
-                        <em>Data sources: ${text.data_used.join(', ')}</em>
+                        <strong>Reasoning:</strong> ${prop.reasoning_summary}
                     </div>
                 `;
+
+                // 2. Render Risk Engine Evaluation
+                htmlContent += `
+                    <div class="risk-evaluation-box">
+                        <div class="risk-header">
+                            🛡️ Risk Engine: <span class="risk-badge badge-${risk.final_decision}">${risk.final_decision}</span>
+                        </div>
+                        <div class="risk-summary">
+                            <em>${risk.summary_explanation}</em>
+                        </div>
+                `;
+
+                // Render specific failed gates if any (BLOCK or REVIEW)
+                const failedGates = risk.gate_results.filter(g => g.status !== 'ALLOW');
+                if (failedGates.length > 0) {
+                    failedGates.forEach(gate => {
+                        htmlContent += `
+                            <div class="risk-gate-item gate-${gate.status}">
+                                <strong>${gate.gate_name} (${gate.status}):</strong> ${gate.explanation}
+                                ${gate.recommended_alternative ? `<br>💡 <em>Tip: ${gate.recommended_alternative}</em>` : ''}
+                            </div>
+                        `;
+                    });
+                }
+                
+                htmlContent += `</div>`; // Close risk-evaluation-box
+                msgDiv.innerHTML = htmlContent;
+
+            } else if (payload.response) {
+                // Fallback for old API format if it ever happens
+                msgDiv.innerHTML = `<strong>Raw Agent Output:</strong><br><pre>${JSON.stringify(payload.response, null, 2)}</pre>`;
             }
         } else {
-            // Fallback for plain text
-            msgDiv.textContent = text;
+            msgDiv.textContent = payload; // Pure text fallback
         }
     }
     
     chatBox.appendChild(msgDiv);
-    // Scroll to bottom
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
@@ -200,8 +231,8 @@ async function handleChatSubmit() {
         // Remove loading message
         document.getElementById(loadingId).remove();
         
-        // 4. Show AI response (The TradeProposal JSON)
-        addMessage(data.response, 'ai');
+        // 4. Show combined AI + Risk Engine response
+        addMessage(data, 'ai');
 
     } catch (error) {
         document.getElementById(loadingId).remove();

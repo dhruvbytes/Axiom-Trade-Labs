@@ -108,7 +108,7 @@ async def process_trading_request(user_prompt: str) -> dict:
     # 3. Create a chat session with the model
     # We use 3.6-flash as requested (using 3.5-flash endpoint identifier for stability in current SDK)
     chat = client.chats.create(
-        model="gemini-3.6-flash", 
+        model="gemini-3.5-flash", 
         config=types.GenerateContentConfig(
             tools=[tool_config],
             temperature=0.2, # Keep it deterministic
@@ -122,7 +122,12 @@ async def process_trading_request(user_prompt: str) -> dict:
     response = chat.send_message(user_prompt)
     
     # 5. Tool execution loop (if Gemini decides it needs tools)
+    api_call_count = 0
+
     while response.function_calls:
+        api_call_count += 1
+        print(f"\n🧠 [API CALL #{api_call_count}] Agent is thinking and requesting tools...")
+
         for function_call in response.function_calls:
             tool_name = function_call.name
             tool_args = function_call.args

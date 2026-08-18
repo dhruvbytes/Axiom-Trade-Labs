@@ -58,3 +58,50 @@ th { background-color: #f8f9fa; color: #555; }
 .chat-input-area input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 1em; }
 .chat-input-area input:focus { outline: none; border-color: #007bff; }
 #send-btn { padding: 12px 20px; height: auto;}
+
+/* =========================================
+   RISK ENGINE UI STYLES
+========================================= */
+.risk-evaluation-box {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 2px dashed #ccc;
+    font-size: 0.9em;
+}
+
+.risk-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.risk-badge {
+    padding: 4px 10px;
+    border-radius: 4px;
+    color: white;
+    font-weight: bold;
+    font-size: 0.85em;
+    letter-spacing: 0.5px;
+}
+
+.badge-ALLOW { background-color: #28a745; } /* Green */
+.badge-BLOCK { background-color: #dc3545; } /* Red */
+.badge-REVIEW { background-color: #fd7e14; } /* Orange */
+
+.risk-summary {
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.risk-gate-item {
+    background-color: #f8f9fa;
+    border-left: 3px solid #ccc;
+    padding: 6px 10px;
+    margin-bottom: 6px;
+    font-size: 0.85em;
+}
+
+.gate-BLOCK { border-left-color: #dc3545; }
+.gate-REVIEW { border-left-color: #fd7e14; }
