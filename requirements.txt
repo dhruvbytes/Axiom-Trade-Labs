@@ -4,3 +4,7 @@ alpaca-py         # Official Alpaca direct SDK (used in Step 1)
 python-dotenv     # To securely load .env secrets
 google-genai      # CURRENT official Google Gemini API SDK
 mcp               # Official Model Context Protocol SDK (to talk to Alpaca MCP server)
+numpy
+onnxruntime
+transformers
+huggingface_hub
