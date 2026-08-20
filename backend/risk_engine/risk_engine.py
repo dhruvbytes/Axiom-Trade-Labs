@@ -1,10 +1,10 @@
 from typing import List, Dict
 
-from backend.risk_models import (
+from backend.risk_engine.risk_models import (
     RiskDecision, RiskGateResult, RiskEngineOutput, 
     SystemHardLimits, UserRiskProfile
 )
-from backend.risk_checkers import (
+from backend.risk_engine.risk_checkers import (
     check_semantic_gate,
     check_account_state_gate,
     check_market_regime_gate,
@@ -12,7 +12,7 @@ from backend.risk_checkers import (
     check_projected_portfolio_gate,
     check_loss_drawdown_gate
 )
-from backend.market_data_utils import calculate_atr, determine_market_regime
+from backend.risk_engine.market_data_utils import calculate_atr, determine_market_regime
 
 class RiskEngine:
     def __init__(self):

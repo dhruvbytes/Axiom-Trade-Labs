@@ -126,61 +126,32 @@ function addMessage(payload, sender) {
         msgDiv.classList.add('ai-msg');
         
         if (typeof payload === 'object' && payload !== null) {
-            // Check for top-level errors (like Agent failing completely)
+            // Top-level error check
             if (payload.error) {
                 msgDiv.classList.add('ai-error');
                 msgDiv.innerHTML = `<strong>Error:</strong> ${payload.error}<br><small>${payload.details || ''}</small>`;
             } 
-            // Check for our new combined structure { proposal: {}, risk_evaluation: {} }
-            else if (payload.proposal && payload.risk_evaluation) {
-                const prop = payload.proposal;
-                const risk = payload.risk_evaluation;
+            // Naya Step 5 Format (text_response aur debug_envelope)
+            else if (payload.text_response) {
+                // 1. LLM Reporter ka human-readable text dikhao
+                let htmlContent = `<div>${payload.text_response.replace(/\n/g, '<br>')}</div>`;
                 
-                // 1. Render AI Proposal
-                const actionColor = prop.action === 'BUY' ? 'profit' : (prop.action === 'SELL' ? 'loss' : '');
-                let htmlContent = `
-                    <div style="margin-bottom: 8px;">
-                        <strong>🤖 AI Proposal:</strong> <span class="${actionColor}">${prop.action}</span> 
-                        ${prop.asset !== 'NONE' ? `<strong>${prop.quantity}</strong> shares of <strong>${prop.asset}</strong>` : ''}
-                    </div>
-                    <div style="margin-bottom: 8px;">
-                        <strong>Estimated Price:</strong> $${prop.estimated_price} | <strong>Confidence:</strong> ${prop.confidence_score}/10
-                    </div>
-                    <div style="margin-bottom: 8px;">
-                        <strong>Reasoning:</strong> ${prop.reasoning_summary}
-                    </div>
-                `;
-
-                // 2. Render Risk Engine Evaluation
-                htmlContent += `
-                    <div class="risk-evaluation-box">
-                        <div class="risk-header">
-                            🛡️ Risk Engine: <span class="risk-badge badge-${risk.final_decision}">${risk.final_decision}</span>
-                        </div>
-                        <div class="risk-summary">
-                            <em>${risk.summary_explanation}</em>
-                        </div>
-                `;
-
-                // Render specific failed gates if any (BLOCK or REVIEW)
-                const failedGates = risk.gate_results.filter(g => g.status !== 'ALLOW');
-                if (failedGates.length > 0) {
-                    failedGates.forEach(gate => {
-                        htmlContent += `
-                            <div class="risk-gate-item gate-${gate.status}">
-                                <strong>${gate.gate_name} (${gate.status}):</strong> ${gate.explanation}
-                                ${gate.recommended_alternative ? `<br>💡 <em>Tip: ${gate.recommended_alternative}</em>` : ''}
-                            </div>
-                        `;
-                    });
+                // 2. Hackathon Judges ke liye ek cool 'Dropdown' add karo jo asli JSON Trace dikhaye
+                if (payload.debug_envelope) {
+                    htmlContent += `
+                        <details style="margin-top: 15px; font-size: 0.85em; background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px solid #ddd;">
+                            <summary style="cursor: pointer; font-weight: bold; color: #007bff;">
+                                🔍 View Deterministic System Trace (ID: ${payload.debug_envelope.trace_id})
+                            </summary>
+                            <pre style="margin-top: 10px; white-space: pre-wrap; word-wrap: break-word; color: #333;">${JSON.stringify(payload.debug_envelope, null, 2)}</pre>
+                        </details>
+                    `;
                 }
-                
-                htmlContent += `</div>`; // Close risk-evaluation-box
                 msgDiv.innerHTML = htmlContent;
-
-            } else if (payload.response) {
-                // Fallback for old API format if it ever happens
-                msgDiv.innerHTML = `<strong>Raw Agent Output:</strong><br><pre>${JSON.stringify(payload.response, null, 2)}</pre>`;
+            } 
+            else if (payload.response) {
+                // Fallback format
+                msgDiv.innerHTML = `<strong>Raw Output:</strong><br><pre>${JSON.stringify(payload.response, null, 2)}</pre>`;
             }
         } else {
             msgDiv.textContent = payload; // Pure text fallback

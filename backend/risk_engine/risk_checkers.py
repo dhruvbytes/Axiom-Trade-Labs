@@ -1,5 +1,5 @@
-from backend.risk_models import RiskDecision, RiskGateResult, SystemHardLimits, UserRiskProfile
-from backend.portfolio_state import calculate_projected_concentration, calculate_max_safe_shares
+from backend.risk_engine.risk_models import RiskDecision, RiskGateResult, SystemHardLimits, UserRiskProfile
+from backend.risk_engine.portfolio_state import calculate_projected_concentration, calculate_max_safe_shares
 
 # ==========================================
 # 1. SEMANTIC GATE

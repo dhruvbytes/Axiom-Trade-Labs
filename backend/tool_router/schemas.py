@@ -16,7 +16,6 @@ class RouterStatus(str, Enum):
     SUCCESS = "SUCCESS"
     ROUTING_UNCERTAIN = "ROUTING_UNCERTAIN"
     DATA_UNAVAILABLE = "DATA_UNAVAILABLE"
-    TOOL_EXECUTION_ERROR = "TOOL_EXECUTION_ERROR"
     NO_RELEVANT_TOOL = "NO_RELEVANT_TOOL"
     INVALID_REQUEST = "INVALID_REQUEST"
     
@@ -36,7 +35,6 @@ class EntityType(str, Enum):
     DATE = "DATE"
     TIME_RANGE = "TIME_RANGE"
     OTHER = "OTHER"
-
 
 # ==========================================
 # STRICT PC-SDB/EA SECURITY CONTRACTS (STEP 4E)
@@ -74,9 +72,8 @@ class WorkflowAuthorization(BaseModel):
     replay_identity: str
     policy_scope_reference: str
 
-
 # ==========================================
-# ROUTING & ENTITY MODELS
+# ROUTING & ENTITY MODELS (OUTPUT OF 4E)
 # ==========================================
 class RoutingContext(BaseModel):
     original_request: str = Field(description="The exact text string to be routed.")
@@ -102,44 +99,9 @@ class ToolRequest(BaseModel):
     authorization_reference: Optional[str] = Field(default=None, description="Reference to the Human/Workflow Auth.")
 
 class RoutingDecision(BaseModel):
+    """The FINAL output of the tool_router module."""
     detected_intent: str = Field(default="UNKNOWN", description="The identified capability domain.")
-    routing_score: float = Field(default=0.0, description="BM25/Lexical score (0.0 to 1.0). NOT a probability.")
+    routing_score: float = Field(default=0.0, description="Semantic score (0.0 to 1.0). NOT a probability.")
     status: RouterStatus
     extracted_entities: List[ExtractedEntity] = Field(default_factory=list)
     selected_tools: List[ToolRequest] = Field(default_factory=list)
-
-
-# ==========================================
-# EXECUTION & PROVENANCE MODELS
-# ==========================================
-class DataProvenance(BaseModel):
-    source_tool: str = Field(description="Exact MCP tool name used.")
-    retrieved_at_utc: str = Field(description="ISO timestamp of data retrieval.")
-    is_cached: bool = Field(description="True if pulled from memory, False if live from Alpaca.")
-    data_age_seconds: float = Field(default=0.0, description="How old the data is relative to now.")
-
-class ToolResult(BaseModel):
-    tool_name: str
-    is_success: bool = Field(description="Must be explicitly evaluated.")
-    data: Optional[Any] = Field(default=None, description="The actual data payload if successful.")
-    error_message: Optional[str] = Field(default=None, description="Explicit error reason if failed.")
-    provenance: Optional[DataProvenance] = Field(default=None)
-
-
-# ==========================================
-# FINAL OUTPUT MODEL (THE MARKET BRIEF)
-# ==========================================
-class MarketBrief(BaseModel):
-    router_status: RouterStatus
-    intent: str = Field(description="What the router thought the user wanted.")
-    routing_score: float
-    data_timestamp_utc: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    
-    successful_observations: Dict[str, ToolResult] = Field(
-        default_factory=dict, 
-        description="Map of tool_name -> ToolResult (contains data and provenance)."
-    )
-    failed_tools: List[ToolResult] = Field(
-        default_factory=list, 
-        description="Tools that threw exceptions, timed out, or had missing tickers."
-    )
