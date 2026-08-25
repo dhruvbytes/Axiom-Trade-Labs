@@ -14,8 +14,8 @@ ALPACA_PAPER_TRADE = os.getenv("ALPACA_PAPER_TRADE", "true").lower() in ("true",
 # Alias for Step 1 compatibility so alpaca_client.py does not break
 ALPACA_PAPER = ALPACA_PAPER_TRADE
 
-# Tool filtering: Restrict AI to only account and stock-data initially (Execution disabled)
-ALPACA_TOOLSETS = os.getenv("ALPACA_TOOLSETS", "account,stock-data")
+# Tool filtering: Restrict AI to only account and stock-data initially (Execution enabled)
+ALPACA_TOOLSETS = os.getenv("ALPACA_TOOLSETS", "account,stock-data,trading")
 
 # Security Check: Fail fast if ANY required secret is missing
 missing_keys = []

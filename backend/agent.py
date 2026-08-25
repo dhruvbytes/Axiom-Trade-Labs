@@ -77,9 +77,6 @@ async def process_trading_request(query: str, account_data: dict, source: str = 
     )
     
     try:
-        await mcp_manager.connect()
-        
-        # --- ASLI LIVE ROUTING (MOCK HATA DIYA) ---
         validated_requests = await master_router.route_request(query)
         
         if not validated_requests:
@@ -88,7 +85,24 @@ async def process_trading_request(query: str, account_data: dict, source: str = 
             
         envelope.validated_requests = validated_requests
         
-        # ... baaki ka poora Risk aur CORE-X wala code same rahega ...
+        # ==========================================
+        # JIT AUTHORITATIVE FACT INJECTION
+        # ==========================================
+        from backend.alpaca_client import get_market_facts
+        
+        symbols_to_fetch = set()
+        for req in validated_requests:
+            sym_arg = req.arguments.get("symbol") or req.arguments.get("symbols")
+            if isinstance(sym_arg, str):
+                symbols_to_fetch.add(sym_arg.upper())
+            elif isinstance(sym_arg, list):
+                for s in sym_arg:
+                    if isinstance(s, str):
+                        symbols_to_fetch.add(s.upper())
+                        
+        # Fetch strictly required live facts asynchronously
+        market_facts = await get_market_facts(list(symbols_to_fetch))
+        account_data.update(market_facts)
         
         # Step 3 & 4F: Sequential Risk & Execution
         for request in validated_requests:

@@ -72,13 +72,15 @@ class DynamicAssetExtractor:
     def _normalize_company_name(self, name: str) -> str:
         """
         Standard Symbology Normalizer:
-        Removes punctuation, leading articles, and corporate jargon deterministically.
+        Removes punctuation, leading articles, web domains, and corporate jargon deterministically.
         """
-        # 1. Fix Regex Trap: Hyphen MUST be at the end of the bracket [,\.\-]
-        clean = re.sub(r'[,\.\-]', ' ', name)
+        # 1. NEW: Safely strip generic web TLDs (.com, .net, .co, etc.) BEFORE punctuation splitting
+        clean = re.sub(r'\.(com|net|org|co|us|io)\b', '', name, flags=re.IGNORECASE)
         
-        # 2. Truncate at common corporate markers.
-        # This safely drops things like "Inc. Class A Common Stock" instantly.
+        # 2. Fix Regex Trap: Hyphen MUST be at the end of the bracket [,\.\-]
+        clean = re.sub(r'[,\.\-]', ' ', clean)
+        
+        # 3. Truncate at common corporate markers.
         markers = [' inc ', ' corp ', ' corporation ', ' company ', ' co ', ' llc ', ' ltd ', ' plc ']
         clean_padded = ' ' + clean + ' '
         for marker in markers:
@@ -87,17 +89,17 @@ class DynamicAssetExtractor:
                 clean = clean[:idx].strip()
                 break
                 
-        # 3. Strip remaining trailing jargon
+        # 4. Strip remaining trailing jargon
         suffixes = r'\b(Holdings|Technologies|Group|Enterprises|Trust|Fund|REIT|Bancorp|Financial|Pharmaceuticals|Therapeutics|Common Stock|Ordinary Shares|Class A|Class B|Class C)\b'
         clean = re.sub(suffixes, '', clean, flags=re.IGNORECASE)
         
-        # 4. Strip leading "The "
+        # 5. Strip leading "The "
         clean = re.sub(r'^The\s+', '', clean, flags=re.IGNORECASE)
         
-        # 5. Clean up extra spaces
+        # 6. Clean up extra spaces
         clean = ' '.join(clean.split())
         return clean
-
+    
     def extract(self, text: str) -> List[ExtractedEntity]:
         """
         Extracts financial entities deterministically from the query.
