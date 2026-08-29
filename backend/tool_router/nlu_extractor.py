@@ -48,9 +48,15 @@ class DynamicAssetExtractor:
         
         # Use a synchronous client for startup initialization
         with httpx.Client() as client:
-            response = client.get(url, headers=headers, timeout=10.0)
+            response = client.get(url, headers=headers, timeout=30.0)
             response.raise_for_status()
             assets = response.json()
+
+        # 🚀 NEW: Ignore common trading words that overlap with real company names
+        trading_stopwords = {
+            "STRATEGY", "POWER", "PORTFOLIO", "ACCOUNT", "STOCK", 
+            "SHARE", "SHARES", "PRICE", "BUY", "SELL", "MARKET", "ORDER"
+        }
 
         for asset in assets:
             symbol = asset.get("symbol")
@@ -64,7 +70,9 @@ class DynamicAssetExtractor:
             
             # 2. Add Cleaned Company Name (Case Insensitive) -> Apple, Microsoft
             clean_name = self._normalize_company_name(name)
-            if clean_name.upper() not in self.name_blacklist and len(clean_name) > 2:
+            
+            # 🚀 UPDATED: Added trading_stopwords check here!
+            if clean_name.upper() not in self.name_blacklist and clean_name.upper() not in trading_stopwords and len(clean_name) > 2:
                 self.name_processor.add_keyword(clean_name, symbol)
                 
         self.is_loaded = True

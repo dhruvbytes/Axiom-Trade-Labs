@@ -27,7 +27,7 @@ class AlpacaMCPClientManager:
                 "ALPACA_API_KEY": config.ALPACA_API_KEY,
                 "ALPACA_SECRET_KEY": config.ALPACA_SECRET_KEY,
                 "ALPACA_PAPER_TRADE": str(config.ALPACA_PAPER_TRADE).lower(),
-                "ALPACA_TOOLSETS": config.ALPACA_TOOLSETS, # Restrict to account, stock-data
+                "ALPACA_TOOLSETS": config.ALPACA_TOOLSETS,
                 "PATH": os.environ.get("PATH", "") # Required for subprocess to find uvx
             }
         )

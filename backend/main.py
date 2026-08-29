@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import List
 from contextlib import asynccontextmanager
 import asyncio
+from backend.execution.journal import execution_journal
 
 # Import humara custom Alpaca client aur naya AI Agent
 from backend import alpaca_client
@@ -20,6 +21,10 @@ async def lifespan(app: FastAPI):
     print("\n" + "="*50)
     print("🚀 [SYSTEM BOOT] Initializing Enterprise Trading Backend...")
     print("="*50)
+    
+    print("⏳ [0/4] Bootstrapping CORE-X Execution Journal...")
+    execution_journal.bootstrap()
+    execution_journal.startup_sweep_crash_recovery()
     
     print("⏳ [1/4] Booting Alpaca MCP Subprocess...")
     await mcp_manager.connect()
@@ -100,7 +105,14 @@ async def chat_with_agent(request: ChatRequest):
             "equity": float(account.equity),
             "buying_power": float(account.buying_power),
             "daily_loss_pct": 0.0,
-            "positions": [{"symbol": p.symbol, "market_value": float(p.market_value)} for p in positions]
+            # 🚀 PRODUCTION MODE: Only normal live positions from Alpaca
+            "positions": [{
+                "symbol": p.symbol, 
+                "qty": float(p.qty), 
+                "side": "long", 
+                "current_price": float(p.current_price),
+                "market_value": float(p.market_value)
+            } for p in positions]
         }
         
         final_response = await agent.process_trading_request(

@@ -53,7 +53,10 @@ class ExplicitValidator:
             validator.validate(instance=request.arguments)
             
         except jsonschema.exceptions.ValidationError as e:
-            # Type mismatch, missing required field, enum failure, etc.
+            # 🚀 HACKATHON DEBUG: Print the exact reason the firewall blocked it
+            print(f"\n🔥 [FIREWALL ALERT] Schema Violation Detected!")
+            print(f"❌ Failed Field: {e.json_path}")
+            print(f"❌ Reason: {e.message}\n")
             return RouterStatus.REJECTED_SCHEMA_MISMATCH
         except jsonschema.exceptions.SchemaError:
             # The MCP schema uses unsupported constraints/recursion

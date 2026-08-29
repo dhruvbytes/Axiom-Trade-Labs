@@ -92,7 +92,7 @@ async def process_trading_request(query: str, account_data: dict, source: str = 
         
         symbols_to_fetch = set()
         for req in validated_requests:
-            sym_arg = req.arguments.get("symbol") or req.arguments.get("symbols")
+            sym_arg = req.arguments.get("symbol") or req.arguments.get("symbol_or_asset_id") or req.arguments.get("symbols")
             if isinstance(sym_arg, str):
                 symbols_to_fetch.add(sym_arg.upper())
             elif isinstance(sym_arg, list):

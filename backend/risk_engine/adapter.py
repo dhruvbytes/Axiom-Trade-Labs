@@ -42,8 +42,8 @@ class RiskAdapter:
         Bridges NMLI Proposals and Authoritative Fact Collection to the Risk Engine.
         Generates the RiskToken ONLY upon an ALLOW decision.
         """
-        is_mutating = request.tool_name in ["buy_stock", "sell_stock", "place_order", "propose_trade"]
-        
+        # FIX: Removed the hardcoded legacy tool name check that was overwriting `is_mutating` here.
+
         try:
             # 1. Parse or Adapt the NMLI Proposal
             proposal = self._parse_or_adapt_proposal(request)
@@ -89,14 +89,20 @@ class RiskAdapter:
         if "intent" in request.arguments and "boundaries" in request.arguments:
             return UniversalTradeProposal(**request.arguments)
             
-        # Legacy adaptation for simple equity tools (buy_stock, sell_stock)
-        symbol = request.arguments.get("symbol", request.arguments.get("symbols", "UNKNOWN"))
+        # 🚀 FIX: Smart adaptation for ALL tools (Reading actual arguments)
+        symbol = request.arguments.get("symbol", request.arguments.get("symbol_or_asset_id", request.arguments.get("symbols", "UNKNOWN")))
         qty = float(request.arguments.get("qty", request.arguments.get("quantity", 1.0)))
-        side = Side.BUY if "buy" in request.tool_name.lower() else Side.SELL
+        
+        # Extract exact side from router's arguments instead of guessing from tool_name
+        arg_side = str(request.arguments.get("side", "")).lower()
+        if arg_side == "buy" or "buy" in request.tool_name.lower():
+            side = Side.BUY
+        else:
+            side = Side.SELL
         
         return UniversalTradeProposal(
             identity=Identity(proposal_id=uuid4()),
-            timing=Timing(trigger_source="legacy_tool", observation_timestamp=datetime.utcnow(), max_decision_age_ms=5000),
+            timing=Timing(trigger_source="mcp_tool", observation_timestamp=datetime.utcnow(), max_decision_age_ms=5000),
             intent=Intent(
                 primary_underlying=symbol, package_quantity=int(qty),
                 legs=[Leg(
@@ -108,7 +114,7 @@ class RiskAdapter:
                 execution_type=ExecutionType.MARKET,
                 max_capital_allocation=999999.0, max_loss_budget=999999.0
             ),
-            metadata=MetadataBlock(rationale="Legacy backward compatibility", confidence=1.0)
+            metadata=MetadataBlock(rationale="Adapted from MCP Tool schema", confidence=1.0)
         )
 
     def _collect_facts(self, proposal: UniversalTradeProposal, account_data: dict) -> SystemFacts:
@@ -142,12 +148,23 @@ class RiskAdapter:
         for leg in proposal.intent.legs:
             sym = leg.instrument.underlying_symbol or proposal.intent.primary_underlying
             if leg.instrument.asset_class == AssetClass.EQUITY:
-                if sym not in provided_quotes:
-                    raise FactCollectionError(f"Missing authoritative quote for equity: {sym}")
-                price = float(provided_quotes[sym])
+                
+                # 🚀 THE MASTERSTROKE FIX: Fallback to portfolio 'current_price' if quote is missing
+                price = 0.0
+                if sym in provided_quotes:
+                    price = float(provided_quotes[sym])
+                else:
+                    # Agar fresh quote nahi mila, toh check karo ki kya ye portfolio mein already hai
+                    for pos in account_data.get("positions", []):
+                        if pos.get("symbol") == sym:
+                            price = float(pos.get("current_price", 0.0))
+                            break
+                            
                 if price <= 0:
-                    raise FactCollectionError(f"Invalid authoritative quote price for {sym}")
+                    raise FactCollectionError(f"Missing authoritative quote for equity: {sym}")
+                    
                 equity_quotes[sym] = EquityQuoteFact(symbol=sym, bid=price, ask=price, price=price)
+                
             else:
                 contract_key = f"{sym}_{leg.instrument.strike}_{leg.instrument.option_type.value}"
                 if contract_key not in provided_quotes:

@@ -45,6 +45,18 @@ def calculate_payoff_profile(proposal: UniversalTradeProposal, facts: SystemFact
 
     # 2. Infinite Risk Detection (Asymptotic Delta as S -> Infinity)
     asymptotic_delta = 0.0
+
+    # 🚀 MATH FIX: Inject existing inventory delta from the portfolio!
+    primary_sym = proposal.intent.primary_underlying
+    for pos in facts.current_positions:
+        if pos.get("symbol") == primary_sym:
+            pos_qty = float(pos.get("qty", 0))
+            if pos.get("side", "long") == "long":
+                asymptotic_delta += pos_qty
+            else:
+                asymptotic_delta -= pos_qty
+
+    # Calculate proposal delta impact
     for leg in proposal.intent.legs:
         delta = 0.0
         multiplier = 1.0
@@ -62,11 +74,11 @@ def calculate_payoff_profile(proposal: UniversalTradeProposal, facts: SystemFact
             delta = qty * direction
         elif leg.instrument.asset_class == AssetClass.OPTION:
             if leg.instrument.option_type == OptionType.CALL:
-                delta = qty * direction  # Puts expire worthless at infinity, only calls/stock matter
+                delta = qty * direction  
                 
         asymptotic_delta += delta
 
-    # If the net delta is negative as price goes to infinity, the risk is theoretically infinite
+    # If the net delta (Inventory + Proposal) is negative, risk is infinite
     is_infinite_risk = (asymptotic_delta < 0)
 
     # 3. Evaluate Maximum Loss across bounded domains
