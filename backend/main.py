@@ -1,3 +1,5 @@
+# backend/main.py
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -15,6 +17,9 @@ from backend.tool_router.discovery import tool_registry
 from backend.tool_router.nlu_semantic import semantic_engine
 from backend.tool_router.nlu_extractor import asset_extractor
 
+# Autonomous Engine Lifecycles
+from backend.autonomous.lifecycle import start_autonomous_system, stop_autonomous_system
+
 # --- 🚀 INDUSTRY-STANDARD BOOT SEQUENCE ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -22,14 +27,14 @@ async def lifespan(app: FastAPI):
     print("🚀 [SYSTEM BOOT] Initializing Enterprise Trading Backend...")
     print("="*50)
     
-    print("⏳ [0/4] Bootstrapping CORE-X Execution Journal...")
+    print("⏳ [0/5] Bootstrapping CORE-X Execution Journal...")
     execution_journal.bootstrap()
     execution_journal.startup_sweep_crash_recovery()
     
-    print("⏳ [1/4] Booting Alpaca MCP Subprocess...")
+    print("⏳ [1/5] Booting Alpaca MCP Subprocess...")
     await mcp_manager.connect()
     
-    print("⏳ [2/4] Awaiting MCP Tool Discovery & Handshake...")
+    print("⏳ [2/5] Awaiting MCP Tool Discovery & Handshake...")
     tools = []
     for _ in range(20):  # Retry polling only during boot
         tools = await mcp_manager.get_available_tools()
@@ -38,18 +43,25 @@ async def lifespan(app: FastAPI):
         await asyncio.sleep(0.5)
     print(f"✅ MCP Server Active. {len(tools)} tools loaded securely.")
     
-    print("⏳ [3/4] Pre-warming NLU Semantic Engine (ONNX)...")
+    print("⏳ [3/5] Pre-warming NLU Semantic Engine (ONNX)...")
     semantic_engine.load()
     print("✅ Semantic Engine loaded.")
     
-    print("⏳ [4/4] Building Deterministic Asset Trie (Alpaca API)...")
+    print("⏳ [4/5] Building Deterministic Asset Trie (Alpaca API)...")
     asset_extractor.build_index()
     print("✅ Symbology index built successfully.")
+    
+    # Autonomous Brain Start
+    print("⏳ [5/5] Igniting Autonomous Trading Brain...")
+    await start_autonomous_system()
+    print("✅ Autonomous Daemon is LIVE.")
     
     print("\n🟢 [SYSTEM BOOT COMPLETE] AI Agent is ready to accept orders!\n")
     yield  # Server runs here
     
     print("\n🛑 [SYSTEM SHUTDOWN] Cleaning up resources...")
+    # Autonomous Brain Safe Shutdown
+    await stop_autonomous_system()
     await mcp_manager.cleanup()
 
 # Attach the lifespan to FastAPI
@@ -64,6 +76,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ... (Baaki poora file waisa hi rahega jaisa tune bheja tha[cite: 12]) ...
 class PositionModel(BaseModel):
     symbol: str
     qty: str
@@ -105,7 +118,6 @@ async def chat_with_agent(request: ChatRequest):
             "equity": float(account.equity),
             "buying_power": float(account.buying_power),
             "daily_loss_pct": 0.0,
-            # 🚀 PRODUCTION MODE: Only normal live positions from Alpaca
             "positions": [{
                 "symbol": p.symbol, 
                 "qty": float(p.qty), 
