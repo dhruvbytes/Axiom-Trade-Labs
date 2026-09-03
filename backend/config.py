@@ -17,6 +17,9 @@ ALPACA_PAPER = ALPACA_PAPER_TRADE
 # Tool filtering
 ALPACA_TOOLSETS = os.getenv("ALPACA_TOOLSETS", "account,stock-data,trading,options")
 
+# Autonomous stock & options policy flag
+AUTONOMOUS_ALLOW_OPTIONS = os.getenv("AUTONOMOUS_ALLOW_OPTIONS", "true").lower() in ("true", "1", "yes")
+
 # Security Check: Fail fast if ANY required secret is missing
 missing_keys = []
 if not ALPACA_API_KEY: missing_keys.append("ALPACA_API_KEY")

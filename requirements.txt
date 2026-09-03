@@ -1,10 +1,16 @@
-fastapi           # API server framework
-uvicorn           # ASGI server to run FastAPI
-alpaca-py         # Official Alpaca direct SDK (used in Step 1)
-python-dotenv     # To securely load .env secrets
-google-genai      # CURRENT official Google Gemini API SDK
-mcp               # Official Model Context Protocol SDK (to talk to Alpaca MCP server)
-numpy
-onnxruntime
-transformers
+alpaca-py==0.44.0
+fastapi==0.141.1
+flashtext
+google-genai
+httpx==0.28.1
 huggingface_hub
+jsonschema
+mcp==1.29.1
+numpy==2.2.6
+onnxruntime
+pydantic==2.13.4
+pydantic-core==2.46.4
+python-dotenv==1.2.3
+starlette==0.49.3
+transformers
+uvicorn==0.52.3

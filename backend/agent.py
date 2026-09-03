@@ -13,6 +13,8 @@ from backend.tool_router.router import master_router
 from backend.execution.models import ExecutableTask, ExecutionState, ExecutionResult
 from backend.execution.executor import corex_executor
 from backend.risk_engine.adapter import risk_adapter
+import re
+from backend.autonomous.universe import universe_manager, UniverseTier
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +79,27 @@ async def process_trading_request(query: str, account_data: dict, source: str = 
     )
     
     try:
+        # ==========================================
+        # FAST-PATH: NLP Watchlist Intent Interceptor
+        # ==========================================
+        track_match = re.match(r'(?i)^(track|watch)\s+([a-zA-Z]+)$', query.strip())
+        untrack_match = re.match(r'(?i)^(untrack|stop watching)\s+([a-zA-Z]+)$', query.strip())
+        
+        if track_match:
+            sym = track_match.group(2).upper()
+            universe_manager.add(sym, UniverseTier.USER_INTENT)
+            envelope.status = f"SUCCESS: Added {sym} to Active Watchlist."
+            return await _finalize(envelope, source)
+            
+        if untrack_match:
+            sym = untrack_match.group(2).upper()
+            universe_manager.remove(sym, UniverseTier.USER_INTENT)
+            envelope.status = f"SUCCESS: Removed {sym} from Active Watchlist."
+            return await _finalize(envelope, source)
+            
+        # ==========================================
+        # NORMAL ROUTING (Trades, Queries, etc.)
+        # ==========================================
         validated_requests = await master_router.route_request(query)
         
         if not validated_requests:
@@ -92,6 +115,7 @@ async def process_trading_request(query: str, account_data: dict, source: str = 
         
         symbols_to_fetch = set()
         for req in validated_requests:
+            # 1. Get top-level symbols
             sym_arg = req.arguments.get("symbol") or req.arguments.get("symbol_or_asset_id") or req.arguments.get("symbols")
             if isinstance(sym_arg, str):
                 symbols_to_fetch.add(sym_arg.upper())
@@ -99,6 +123,14 @@ async def process_trading_request(query: str, account_data: dict, source: str = 
                 for s in sym_arg:
                     if isinstance(s, str):
                         symbols_to_fetch.add(s.upper())
+            
+            # 🚀 2. FIX: Extract symbols from complex multi-leg spreads
+            legs = req.arguments.get("legs", [])
+            if isinstance(legs, list):
+                for leg in legs:
+                    leg_sym = leg.get("symbol")
+                    if isinstance(leg_sym, str):
+                        symbols_to_fetch.add(leg_sym.upper())
                         
         # Fetch strictly required live facts asynchronously
         market_facts = await get_market_facts(list(symbols_to_fetch))

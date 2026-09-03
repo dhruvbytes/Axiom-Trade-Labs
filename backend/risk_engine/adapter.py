@@ -1,6 +1,7 @@
 # backend/risk_engine/adapter.py
 import hashlib
-from datetime import datetime, timezone
+import re
+from datetime import datetime, timezone, date
 from uuid import uuid4
 
 from backend.tool_router.schemas import ToolRequest
@@ -8,7 +9,7 @@ from backend.risk_engine.risk_models import (
     RiskDecision, UniversalTradeProposal, SystemFacts, 
     AccountFact, MarketStateFact, EquityQuoteFact, OptionQuoteFact,
     Identity, Timing, Intent, Boundaries, MetadataBlock, Leg, Instrument,
-    AssetClass, Side, PositionIntent, ExecutionType, LimitPriceEffect
+    AssetClass, Side, PositionIntent, ExecutionType, LimitPriceEffect, OptionType
 )
 from backend.risk_engine.risk_engine import master_risk_engine
 
@@ -100,6 +101,68 @@ class RiskAdapter:
         else:
             side = Side.SELL
         
+        # OCC Option Order Detection (Multi-Leg Spread Support)
+        if request.tool_name == "place_option_order":
+            built_legs = []
+            primary_underlying = "UNKNOWN"
+            
+            # Check if AI agent provided a complex 'legs' array for spreads
+            raw_legs = request.arguments.get("legs", [])
+            
+            if raw_legs and isinstance(raw_legs, list):
+                # MULTI-LEG SPREAD (Extract all legs)
+                for raw_leg in raw_legs:
+                    leg_sym = str(raw_leg.get("symbol", "")).upper()
+                    leg_side = Side.BUY if str(raw_leg.get("side", "")).lower() == "buy" else Side.SELL
+                    leg_ratio = int(raw_leg.get("ratio_qty", 1))
+                    
+                    match = re.match(r"^([A-Z]+)(\d{2})(\d{2})(\d{2})([CP])(\d{8})$", leg_sym)
+                    if match:
+                        primary_underlying = match.group(1)
+                        expiry = date(2000 + int(match.group(2)), int(match.group(3)), int(match.group(4)))
+                        opt_type = OptionType.CALL if match.group(5) == "C" else OptionType.PUT
+                        strike = float(match.group(6)) / 1000.0
+                        
+                        built_legs.append(Leg(
+                            instrument=Instrument(
+                                asset_class=AssetClass.OPTION, underlying_symbol=primary_underlying,
+                                strike=strike, expiry=expiry, option_type=opt_type
+                            ),
+                            side=leg_side, position_intent=PositionIntent.OPEN, ratio_qty=leg_ratio
+                        ))
+            else:
+                # FALLBACK: Single-Leg Naked Option
+                occ_match = re.match(r"^([A-Z]+)(\d{2})(\d{2})(\d{2})([CP])(\d{8})$", str(symbol).upper())
+                if occ_match:
+                    primary_underlying = occ_match.group(1)
+                    expiry = date(2000 + int(occ_match.group(2)), int(occ_match.group(3)), int(occ_match.group(4)))
+                    opt_type = OptionType.CALL if occ_match.group(5) == "C" else OptionType.PUT
+                    strike = float(occ_match.group(6)) / 1000.0
+                    
+                    built_legs.append(Leg(
+                        instrument=Instrument(
+                            asset_class=AssetClass.OPTION, underlying_symbol=primary_underlying,
+                            strike=strike, expiry=expiry, option_type=opt_type
+                        ),
+                        side=side, position_intent=PositionIntent.OPEN, ratio_qty=1
+                    ))
+
+            if built_legs:
+                return UniversalTradeProposal(
+                    identity=Identity(proposal_id=uuid4()),
+                    timing=Timing(trigger_source="mcp_tool", observation_timestamp=datetime.utcnow(), max_decision_age_ms=5000),
+                    intent=Intent(
+                        primary_underlying=primary_underlying, package_quantity=int(qty),
+                        legs=built_legs
+                    ),
+                    boundaries=Boundaries(
+                        execution_type=ExecutionType.MARKET,
+                        max_capital_allocation=999999.0, max_loss_budget=999999.0
+                    ),
+                    metadata=MetadataBlock(rationale="Adapted from place_option_order schema (Multi-Leg Supported)", confidence=1.0)
+                )
+
+        # 🚀 Fallback for Equity (Stock) orders
         return UniversalTradeProposal(
             identity=Identity(proposal_id=uuid4()),
             timing=Timing(trigger_source="mcp_tool", observation_timestamp=datetime.utcnow(), max_decision_age_ms=5000),
@@ -167,11 +230,23 @@ class RiskAdapter:
                 
             else:
                 contract_key = f"{sym}_{leg.instrument.strike}_{leg.instrument.option_type.value}"
-                if contract_key not in provided_quotes:
+                
+                # Also generate OCC symbol for alternative lookup
+                strike_int = str(int(round(float(leg.instrument.strike) * 1000))).zfill(8)
+                opt_char = "C" if leg.instrument.option_type == OptionType.CALL else "P"
+                exp_str = leg.instrument.expiry.strftime("%y%m%d") if leg.instrument.expiry else ""
+                occ_key = f"{sym.upper()}{exp_str}{opt_char}{strike_int}" if exp_str else ""
+
+                price = 0.0
+                if contract_key in provided_quotes:
+                    price = float(provided_quotes[contract_key])
+                elif occ_key and occ_key in provided_quotes:
+                    price = float(provided_quotes[occ_key])
+
+                if price <= 0:
                     raise FactCollectionError(f"Missing authoritative quote for option: {contract_key}")
-                price = float(provided_quotes[contract_key])
                 option_quotes[contract_key] = OptionQuoteFact(
-                    contract_symbol=contract_key, underlying=sym, strike=leg.instrument.strike,
+                    contract_symbol=occ_key or contract_key, underlying=sym, strike=leg.instrument.strike,
                     expiry=leg.instrument.expiry, option_type=leg.instrument.option_type,
                     bid=price, ask=price, price=price, multiplier=100
                 )

@@ -1,5 +1,7 @@
+# backend/mcp_client_manager.py
 import os
-import contextlib
+import sys
+import shutil
 from contextlib import AsyncExitStack
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
@@ -11,97 +13,68 @@ class AlpacaMCPClientManager:
         self._exit_stack = AsyncExitStack()
 
     async def connect(self):
-        """
-        Starts the official Alpaca MCP server via 'uvx' as a subprocess on STDIO.
-        Secures it with read-only toolsets.
-        """
         if self.session is not None:
-            return # Already connected
+            return
 
-        # Setup server parameters according to official Alpaca MCP guidelines
+        # 1. STRICT ENVIRONMENT
+        clean_env = os.environ.copy()
+        clean_env.update({
+            "ALPACA_API_KEY": str(config.ALPACA_API_KEY),
+            "ALPACA_SECRET_KEY": str(config.ALPACA_SECRET_KEY),
+            "ALPACA_PAPER_TRADE": str(config.ALPACA_PAPER_TRADE).lower(),
+            "ALPACA_TOOLSETS": str(config.ALPACA_TOOLSETS),
+            "PYTHONIOENCODING": "utf-8",
+            "PYTHONUNBUFFERED": "1"
+        })
+
+        # 2. RESOLVE MCP SERVER EXECUTABLE (Supports venv, Scripts/, and PATH)
+        venv_scripts = os.path.dirname(sys.executable)
+        exe_name = "alpaca-mcp-server.exe" if sys.platform == "win32" else "alpaca-mcp-server"
+        mcp_exec = os.path.join(venv_scripts, exe_name)
+        
+        if not os.path.exists(mcp_exec):
+            alt_exec = os.path.join(venv_scripts, "Scripts", exe_name)
+            if os.path.exists(alt_exec):
+                mcp_exec = alt_exec
+            else:
+                which_exec = shutil.which(exe_name) or shutil.which("alpaca-mcp-server")
+                if which_exec and os.path.exists(which_exec):
+                    mcp_exec = which_exec
+                else:
+                    raise RuntimeError(f"CRITICAL: Server EXECUTABLE NOT FOUND. Looked at {mcp_exec}, {alt_exec}, and PATH. Please run: python -m pip install alpaca-mcp-server")
+
         server_params = StdioServerParameters(
-            command="uvx",
-            args=["alpaca-mcp-server"],
-            env={
-                **os.environ,  # Keep base environment
-                "ALPACA_API_KEY": config.ALPACA_API_KEY,
-                "ALPACA_SECRET_KEY": config.ALPACA_SECRET_KEY,
-                "ALPACA_PAPER_TRADE": str(config.ALPACA_PAPER_TRADE).lower(),
-                "ALPACA_TOOLSETS": config.ALPACA_TOOLSETS,
-                "PATH": os.environ.get("PATH", "") # Required for subprocess to find uvx
-            }
+            command=mcp_exec,
+            args=[],
+            env=clean_env
         )
 
         try:
-            # Context manager flow for STDIO client
             stdio_transport = await self._exit_stack.enter_async_context(stdio_client(server_params))
             read_stream, write_stream = stdio_transport
-            
-            # Start the session
             self.session = await self._exit_stack.enter_async_context(ClientSession(read_stream, write_stream))
             
-            # Initialize connection to the server
             await self.session.initialize()
             print("✅ Successfully connected to local Alpaca MCP Server.")
             
         except Exception as e:
             await self.cleanup()
-            raise RuntimeError(f"❌ Failed to start Alpaca MCP Server. Ensure 'uvx' is installed. Error: {str(e)}")
+            raise RuntimeError(f"❌ Failed to start Alpaca MCP Server natively. Error: {str(e)}")
 
     async def get_available_tools(self):
-        """Fetches the list of tools currently exposed by the MCP server."""
         if not self.session:
-            raise RuntimeError("MCP Session not initialized. Call connect() first.")
-        
+            raise RuntimeError("MCP Session not initialized.")
         response = await self.session.list_tools()
         return response.tools
 
     async def execute_tool(self, tool_name: str, arguments: dict):
-        """Calls a specific tool on the MCP server and returns the result."""
         if not self.session:
             raise RuntimeError("MCP Session not initialized.")
-        
-        # print(f"Executing tool: {tool_name}") # Uncomment for deep debugging
         result = await self.session.call_tool(tool_name, arguments)
         return result
 
     async def cleanup(self):
-        """Gracefully closes the MCP server subprocess."""
         await self._exit_stack.aclose()
         self.session = None
 
-# Global instance to be used across FastAPI requests
 mcp_manager = AlpacaMCPClientManager()
-
-
-# ==========================================
-# TESTING BLOCK (Run this file directly)
-# ==========================================
-if __name__ == "__main__":
-    import asyncio
-
-    async def run_test():
-        print("Starting MCP Client Test...")
-        manager = AlpacaMCPClientManager()
-        
-        try:
-            # 1. Test Connection
-            await manager.connect()
-            
-            # 2. Test Fetching Tools
-            tools = await manager.get_available_tools()
-            print(f"\n✅ Total Tools Loaded: {len(tools)}")
-            
-            print("\nAvailable Tools:")
-            for tool in tools:
-                print(f" - {tool.name}: {tool.description[:60]}...")
-                
-        except Exception as e:
-            print(f"\n❌ Test Failed: {e}")
-        finally:
-            # 3. Clean up
-            await manager.cleanup()
-            print("\nTest Finished & Cleaned up.")
-
-    # Run the async test
-    asyncio.run(run_test())

@@ -60,6 +60,6 @@ class SharedAdmissionBoundary:
         
         return UnifiedProposal(
             raw_dict=validated_data,
-            source="AUTONOMOUS_TRIGGER",
+            source=validated_data.get("metadata", {}).get("source", "AUTONOMOUS_TRIGGER"),
             priority=priority
         )

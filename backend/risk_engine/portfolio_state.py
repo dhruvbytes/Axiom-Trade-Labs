@@ -1,17 +1,18 @@
 # backend/risk_engine/portfolio_state.py
 from typing import List, Dict
-from backend.risk_engine.risk_models import UniversalTradeProposal, SystemFacts, AssetClass
+from backend.risk_engine.risk_models import UniversalTradeProposal, SystemFacts, AssetClass, Side
 
 # ==========================================
-# 1. PROJECTED PORTFOLIO CONCENTRATION (UPDATED FOR NMLI)
+# 1. PROJECTED PORTFOLIO CONCENTRATION (HYBRID LOGIC)
 # ==========================================
 def calculate_projected_concentration(
     proposal: UniversalTradeProposal,
     facts: SystemFacts
 ) -> float:
     """
-    Calculates the projected weight (concentration) of the primary asset 
-    based on gross notional exposure of the proposed multi-leg trade.
+    Calculates the projected weight (concentration) of the primary asset.
+    - Equity uses GROSS notional exposure.
+    - Options use NET notional exposure (hedged spreads).
     """
     if facts.account.equity <= 0:
         return 0.0
@@ -23,27 +24,36 @@ def calculate_projected_concentration(
             existing_value = float(pos.get('market_value', 0.0))
             break
             
-    # 2. Calculate Gross Notional Exposure of the proposal
-    proposed_notional = 0.0
+    # 2. Separate logic for Equity and Options
+    proposed_equity_notional = 0.0
+    proposed_option_notional = 0.0
+    
     for leg in proposal.intent.legs:
-        multiplier = 1.0
         sym = leg.instrument.underlying_symbol or proposal.intent.primary_underlying
         
         if leg.instrument.asset_class == AssetClass.EQUITY:
             price = 0.0
             if sym in facts.equity_quotes:
                 price = facts.equity_quotes[sym].price
-            proposed_notional += leg.ratio_qty * price
+            
+            # 🚀 STOCKS: Always GROSS (No direction netting)
+            proposed_equity_notional += leg.ratio_qty * price
+            
         else:
+            # 🚀 OPTIONS: Apply Direction (+1 for Buy, -1 for Sell) for Spread Netting
+            direction = 1 if leg.side == Side.BUY else -1
             contract_key = f"{sym}_{leg.instrument.strike}_{leg.instrument.option_type.value}"
+            multiplier = 100
+            
             if contract_key in facts.option_quotes:
                 multiplier = facts.option_quotes[contract_key].multiplier
             
-            # For options, conservative exposure uses the underlying strike
             strike = leg.instrument.strike or 0.0
-            proposed_notional += leg.ratio_qty * strike * multiplier
+            proposed_option_notional += (leg.ratio_qty * strike * multiplier * direction)
 
-    total_proposed_exposure = proposed_notional * proposal.intent.package_quantity
+    # 3. Combine: Gross Equity + Absolute Netted Options
+    total_proposed_exposure = (proposed_equity_notional + abs(proposed_option_notional)) * proposal.intent.package_quantity
+    
     projected_value = existing_value + total_proposed_exposure
     
     # 4. Calculate the projected concentration weight

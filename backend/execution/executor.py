@@ -58,8 +58,8 @@ class CoreXExecutor:
                 
                 if is_err:
                     error_msg = getattr(raw_result, 'content', "Unknown MCP Error")
-                    execution_journal.transition_state(ik, ExecutionState.DISPATCHED, ExecutionState.SUCCEEDED, error_context=str(error_msg))
-                    return ExecutionResult(idempotency_key=ik, status=ExecutionState.SUCCEEDED, error_message=str(error_msg))
+                    execution_journal.transition_state(ik, ExecutionState.DISPATCHED, ExecutionState.REJECTED, error_context=str(error_msg))
+                    return ExecutionResult(idempotency_key=ik, status=ExecutionState.REJECTED, error_message=str(error_msg))
                 else:
                     # Parse textual content blocks 
                     result_text = " ".join([c.text for c in raw_result.content if getattr(c, 'type', '') == 'text'])
@@ -89,6 +89,8 @@ class CoreXExecutor:
         """Returns structured result for requests that were already processed."""
         if state == ExecutionState.SUCCEEDED:
             return ExecutionResult(idempotency_key=ik, status=state, data=data, error_message=err_ctx, is_cached_replay=True)
+        elif state == ExecutionState.REJECTED:
+            return ExecutionResult(idempotency_key=ik, status=state, error_message=err_ctx, is_cached_replay=True)
         elif state == ExecutionState.FAILED_SAFE:
             return ExecutionResult(idempotency_key=ik, status=state, error_message=err_ctx, is_cached_replay=True)
         elif state == ExecutionState.EXECUTION_UNCERTAIN:

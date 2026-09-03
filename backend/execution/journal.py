@@ -3,6 +3,7 @@
 import sqlite3
 import json
 import os
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional, Tuple
 from .models import ExecutionState
@@ -30,12 +31,20 @@ class ExecutionJournal:
         conn.execute("PRAGMA synchronous=NORMAL;")
         return conn
 
+    @contextmanager
+    def _connection(self):
+        conn = self._get_conn()
+        try:
+            yield conn
+        finally:
+            conn.close()
+
     def bootstrap(self):
         """
         MUST be called once at application startup.
         Safely creates the schema without locking hot-paths.
         """
-        with self._get_conn() as conn:
+        with self._connection() as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS execution_journal (
                     ik TEXT PRIMARY KEY,
@@ -56,7 +65,7 @@ class ExecutionJournal:
         Enterprise pattern for test isolation. 
         Drops the table cleanly instead of deleting the OS file.
         """
-        with self._get_conn() as conn:
+        with self._connection() as conn:
             conn.execute("DROP TABLE IF EXISTS execution_journal")
         self.bootstrap()
 
@@ -65,7 +74,7 @@ class ExecutionJournal:
         CRASH RECOVERY: Sweeps orphan DISPATCHED states to UNCERTAIN.
         """
         now = datetime.now(timezone.utc).isoformat()
-        with self._get_conn() as conn:
+        with self._connection() as conn:
             cursor = conn.execute("""
                 UPDATE execution_journal
                 SET state = ?, updated_at_utc = ?, error_context = ?
@@ -88,7 +97,7 @@ class ExecutionJournal:
         """Atomic Deduplication Check."""
         now = datetime.now(timezone.utc).isoformat()
         try:
-            with self._get_conn() as conn:
+            with self._connection() as conn:
                 conn.execute("BEGIN EXCLUSIVE TRANSACTION")
                 try:
                     conn.execute("""
@@ -125,7 +134,7 @@ class ExecutionJournal:
         now = datetime.now(timezone.utc).isoformat()
         payload_str = json.dumps(result_payload) if result_payload is not None else None
         
-        with self._get_conn() as conn:
+        with self._connection() as conn:
             cursor = conn.execute("""
                 UPDATE execution_journal
                 SET state = ?, updated_at_utc = ?, mcp_result_payload = ?, error_context = ?
@@ -135,6 +144,19 @@ class ExecutionJournal:
                 ik, expected_current_state.value
             ))
             return cursor.rowcount > 0
+
+    def unresolved_execution_count(self) -> int:
+        """Return durable post-dispatch uncertainty requiring reconciliation."""
+        self.bootstrap()
+        with self._connection() as conn:
+            row = conn.execute(
+                """
+                SELECT COUNT(*) AS count FROM execution_journal
+                WHERE state IN (?, ?)
+                """,
+                (ExecutionState.DISPATCHED.value, ExecutionState.EXECUTION_UNCERTAIN.value),
+            ).fetchone()
+            return int(row[0]) if row else 0
 
 # Singleton instance
 execution_journal = ExecutionJournal()

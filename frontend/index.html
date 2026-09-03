@@ -3,72 +3,252 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Trading Lab - Step 2</title>
+    <title>AXIOM TRADE LABS</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Header Section -->
-        <header>
-            <h1>AI Trading Lab <span>Step 2</span></h1>
-            <div id="health-status" class="status-badge offline">Backend: Checking...</div>
-        </header>
-
-        <!-- Error Banner (Hidden by default) -->
-        <div id="error-banner" class="error-banner hidden"></div>
-
-        <!-- Dashboard Section -->
-        <main>
-            <div class="card-row">
-                <div class="card">
-                    <h3>Portfolio Value</h3>
-                    <h2 id="portfolio-value">$--.--</h2>
-                </div>
-                <div class="card">
-                    <h3>Buying Power</h3>
-                    <h2 id="buying-power">$--.--</h2>
-                </div>
-                <button id="refresh-btn" class="primary-btn">Refresh Data</button>
+    <div id="axiom-shell">
+        
+        <!-- LEFT SIDEBAR -->
+        <aside class="axiom-sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-mark"></div>
+                <!-- Kept compact per branding rules -->
+                <h2>AXIOM</h2>
             </div>
+            <nav class="sidebar-nav">
+                <!-- 1. Added ID to Dashboard -->
+                <button class="nav-item active" id="nav-dashboard-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    <span>Dashboard</span>
+                </button>
 
-            <!-- Positions Table -->
-            <div class="table-container">
-                <h3>Current Positions</h3>
-                <table id="positions-table">
-                    <thead>
-                        <tr>
-                            <th>Symbol</th>
-                            <th>Quantity</th>
-                            <th>Market Value</th>
-                            <th>Unrealized P&L</th>
-                        </tr>
-                    </thead>
-                    <tbody id="positions-body">
-                        <tr>
-                            <td colspan="4" class="empty-state">Loading data...</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <button class="nav-item" id="nav-autonomous-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    <span>Autonomous Engine</span>
+                </button>
+
+                <button class="nav-item" id="toggle-chat-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    <span>Trading Agent</span>
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <div id="health-status" class="status-indicator offline">
+                    <div class="pulse-dot"></div>
+                    <span>SYSTEM OFFLINE</span>
+                </div>
             </div>
+        </aside>
 
-            <!-- AI Chat Section -->
-            <div class="chat-container">
-                <h3>🤖 AI Trading Assistant</h3>
+        <!-- MAIN WORKSPACE -->
+        <main class="axiom-main">
+            
+            <!-- TOP HUD -->
+            <header class="axiom-hud">
+                <div class="hud-brand">
+                    <h1>AXIOM TRADE LABS</h1>
+                    <span class="hud-subtitle">AUTONOMOUS ENGINE</span>
+                </div>
                 
-                <div class="chat-box" id="chat-box">
-                    <div class="message system-msg">
-                        Hello! I am your AI Trading Assistant. Ask me to analyze a stock or check your portfolio.
+                <div class="hud-metrics">
+                    <div class="metric-block">
+                        <span class="metric-label">TOTAL EQUITY</span>
+                        <span class="metric-value" id="portfolio-value">$--.--</span>
                     </div>
-                    <!-- Messages will appear here -->
+                    <div class="metric-block">
+                        <span class="metric-label">BUYING POWER</span>
+                        <span class="metric-value" id="buying-power">$--.--</span>
+                    </div>
+                    <div class="metric-block">
+                        <span class="metric-label">DATA FEED</span>
+                        <span class="metric-value" id="stream-status">CONNECTING...</span>
+                    </div>
+                    <button id="refresh-btn" class="hud-action">REFRESH</button>
+                </div>
+            </header>
+
+            <div id="error-banner" class="error-banner hidden"></div>
+
+            <!-- WORKSPACE GRID -->
+            <div id="dashboard-workspace" class="axiom-workspace">
+                
+                <!-- CENTER COL: ARCHITECTURE & CONSOLE -->
+                <div class="workspace-center">
+                    
+                    <!-- ARCHITECTURE PANELS -->
+                    <div class="architecture-row">
+                        <!-- DECISION PANEL -->
+                        <div class="arch-panel">
+                            <div class="panel-header">
+                                <h3>AUTONOMOUS DECISION</h3>
+                                <span class="panel-time" id="decision-time">—</span>
+                            </div>
+                            <div class="panel-content" id="panel-decision-content">
+                                <div class="empty-state">Waiting for evaluation...</div>
+                            </div>
+                        </div>
+
+                        <!-- RISK PANEL -->
+                        <div class="arch-panel">
+                            <div class="panel-header">
+                                <h3>RISK ENGINE</h3>
+                            </div>
+                            <div class="panel-content" id="panel-risk-content">
+                                <div class="empty-state">Waiting for proposal...</div>
+                            </div>
+                        </div>
+
+                        <!-- CORE-X PANEL -->
+                        <div class="arch-panel">
+                            <div class="panel-header">
+                                <h3>CORE-X EXECUTION</h3>
+                            </div>
+                            <div class="panel-content" id="panel-corex-content">
+                                <div class="empty-state">Waiting for routing...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LIVE ACTIVITY CONSOLE -->
+                    <div class="console-panel">
+                        <div class="panel-header">
+                            <h3>LIVE ACTIVITY CONSOLE</h3>
+                            <div class="console-actions">
+                                <span id="console-stream-status" class="console-status status-blocked">STREAM OFFLINE</span>
+                            </div>
+                        </div>
+                        <div id="activity-feed" class="console-feed">
+                            <div class="feed-item item-SYSTEM">
+                                <span class="feed-time">System</span>
+                                <span class="feed-tag">[INIT]</span>
+                                <span class="feed-msg">Connecting to Axiom Trade Labs Backend...</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="chat-input-area">
-                    <input type="text" id="chat-input" placeholder="e.g., Analyze AAPL and tell me if I should buy..." autocomplete="off">
-                    <button id="send-btn" class="primary-btn">Send</button>
+                <!-- RIGHT COL: PORTFOLIO -->
+                <div class="workspace-right">
+                    <div class="portfolio-panel">
+                        <div class="panel-header">
+                            <h3>ACTIVE POSITIONS</h3>
+                            <span class="position-count" id="pos-count">0</span>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="axiom-table">
+                                <thead>
+                                    <tr>
+                                        <th>SYM</th>
+                                        <th class="text-right">QTY</th>
+                                        <th class="text-right">MKT VAL</th>
+                                        <th class="text-right">P&L</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="positions-body">
+                                    <tr>
+                                        <td colspan="4" class="empty-state">Loading portfolio data...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div id="autonomous-workspace" class="axiom-workspace hidden">
+   
+                <div id="auto-freeze-banner" class="auto-banner frozen hidden">
+                    <div class="banner-title"><span class="pulse-dot-amber"></span> FROZEN — UNCERTAINTY</div>
+                    <div class="banner-desc">Decision making temporarily paused to protect capital.</div>
+                    <div class="banner-timer" id="auto-timer">Waiting for recovery signal...</div>
+                </div>
+
+                <div id="auto-active-banner" class="auto-banner active">
+                    <div class="banner-item"><span class="pulse-dot-green"></span> ACTIVE</div>
+                    <div class="banner-item">REGIME: <span id="auto-regime" class="text-blue">--</span></div>
+                    <div class="banner-item">OPTIONS GUARD: <span id="auto-options" class="text-white">--</span></div>
+                </div>
+
+                <!-- BENTO GRID LAYOUT -->
+                <div class="auto-grid">
+                    
+                    <!-- LEFT COL: DECISIONS -->
+                    <div class="auto-card col-span-8">
+                        <div class="panel-header">
+                            <h3>RECENT DECISIONS</h3>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="axiom-table">
+                                <thead>
+                                    <tr>
+                                        <th>TIME</th>
+                                        <th>ASSET</th>
+                                        <th>ACTION</th>
+                                        <th>ALPHA MODEL</th>
+                                        <th class="text-right">CONF</th>
+                                        <th>STATUS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="auto-decisions-body">
+                                    <tr><td colspan="6" class="empty-state">Loading autonomous data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COL: INTELLIGENCE & LEARNING -->
+                    <div class="auto-right-col col-span-4">
+                        
+                        <!-- BAYESIAN PREFERENCES -->
+                        <div class="auto-card flex-1">
+                            <div class="panel-header">
+                                <h3>STRATEGY INTELLIGENCE</h3>
+                            </div>
+                            <div class="panel-content" id="auto-strategy-body">
+                                <div class="empty-state">Calculating Bayesian models...</div>
+                            </div>
+                        </div>
+
+                        <!-- ADAPTIVE LEARNING TICKER -->
+                        <div class="auto-card flex-1">
+                            <div class="panel-header">
+                                <h3>ADAPTIVE LEARNING</h3>
+                            </div>
+                            <div class="panel-content" id="auto-learning-body" style="gap: 12px; display: flex; flex-direction: column;">
+                                <div class="empty-state">No recent mature outcomes.</div>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
             </div>
 
         </main>
+        
+        <!-- CHAT DRAWER -->
+        <div id="chat-drawer" class="chat-drawer">
+            <div class="chat-header">
+                <div class="chat-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    <h3>Trading Agent</h3>
+                </div>
+                <button id="close-chat-btn" class="close-btn">&times;</button>
+            </div>
+            <div class="chat-box" id="chat-box">
+                <div class="message system-msg">
+                    Axiom Trade Labs Assistant initialized. Ask for market analysis or portfolio review.
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Enter query..." autocomplete="off">
+                <button id="send-btn" class="action-btn">SEND</button>
+            </div>
+        </div>
+
+        <div id="drawer-overlay" class="drawer-overlay hidden"></div>
+
     </div>
 
     <script src="app.js"></script>

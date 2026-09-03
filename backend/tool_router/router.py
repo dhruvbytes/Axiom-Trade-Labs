@@ -155,7 +155,6 @@ class DynamicRouter:
                             opt_type = m.group(3)
                             
                             # Generate OCC Symbol: TICKER + YYMMDD + C/P + STRIKE*1000
-                            # Defaulting expiration to Sept 18, 2026 (260918) for Hackathon simulation
                             strike_int = str(int(float(strike) * 1000)).zfill(8)
                             opt_char = "C" if opt_type.startswith("c") else "P"
                             occ_symbol = f"{target_symbol.upper()}260918{opt_char}{strike_int}"
@@ -166,11 +165,12 @@ class DynamicRouter:
                                 "side": leg_side
                             })
                         
-                        # Apply strict Multi-Leg Schema rules (Remove parent side/symbol)
+                        # 🚀 INDUSTRY STANDARD FIX: Multi-leg API payload structure
                         extracted_args["legs"] = legs
                         extracted_args.pop("side", None)
-                        # RISK ENGINE FIX: Assign first leg's OCC symbol to root so Risk Engine can parse
-                        extracted_args["symbol"] = legs[0]["symbol"]
+                        
+                        # Alpaca STRICTLY requires the UNDERLYING ticker (NVDA) for mleg orders, not the OCC string.
+                        extracted_args["symbol"] = target_symbol.upper()
                         
                         # Set root quantity as strategy multiplier
                         extracted_args["qty"] = str(int(float(extracted_qty)))

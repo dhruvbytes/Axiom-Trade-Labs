@@ -34,8 +34,17 @@ class MarketWatcherBoundary:
             event_type_map = {"t": "trade", "q": "quote", "b": "bar"}
             event_type = event_type_map.get(msg_type.lower(), "custom_stream")
 
-            # Extract price safely (p for trade, c for bar, bp/ap for quote)
-            price_raw = raw_data.get("p") or raw_data.get("c") or raw_data.get("bp")
+            # Extract price safely (p for trade, c for bar, mid of bp/ap for quote)
+            price_raw = raw_data.get("p") or raw_data.get("c")
+            if price_raw is None:
+                bp = float(raw_data.get("bp") or 0.0)
+                ap = float(raw_data.get("ap") or 0.0)
+                if bp > 0 and ap > 0:
+                    price_raw = (bp + ap) / 2.0
+                elif bp > 0:
+                    price_raw = bp
+                elif ap > 0:
+                    price_raw = ap
             price = float(price_raw) if price_raw is not None else None
 
             source = MarketEventSource.WEBSOCKET_CRYPTO if is_crypto else MarketEventSource.WEBSOCKET_IEX

@@ -40,20 +40,4 @@ class MaterialChangeFingerprint(BaseModel):
     hash_value: str
     strategy_id: str
     symbol: str
-    created_at_utc: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-
-class MarketBrief(BaseModel):
-    """The strict, bounded context sent to the LLM. NO raw ticks or massive chains."""
-    timestamp_utc: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    trigger_reason: str = Field(description="Why this brief was generated e.g., 'RSI < 30'")
-    current_facts: Dict[str, Any] = Field(description="Normalized current price, spread, etc. (IEX derived)")
-    portfolio_exposure: Dict[str, Any] = Field(description="Current positions for this symbol")
-    strategy_constraints: Dict[str, Any] = Field(description="Allowed instruments, max risk, etc.")
-    narrowed_option_facts: Optional[List[Dict[str, Any]]] = Field(
-        default=None, 
-        description="Max 3-5 near-the-money strikes if options strategy is triggered."
-    )
-    provenance: str = Field(
-        default="Alpaca_IEX_Basic_Tier", 
-        description="Data source authority guaranteeing free tier compliance"
-    )
+    created_at_utc: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())

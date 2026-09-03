@@ -37,15 +37,6 @@ class LLMGovernance:
             return True
 
     async def invoke_llm_safely(self, llm_callable: Callable, brief: Any) -> Optional[Dict[str, Any]]:
-        """
-        Executes the LLM function safely. 
-        llm_callable must be an async function that takes a MarketBrief and returns a string.
-        """
-        # 1. Global Rate Budget Check
-        if not await self._check_global_rate_limit():
-            logger.warning("LLM Global Rate Limit exceeded. Defaulting to NO_ACTION.")
-            return None
-
         # 2. Concurrency Limit (Max 2 concurrent calls)
         async with self.semaphore:
             try:
@@ -74,4 +65,34 @@ class LLMGovernance:
                 return None
             except Exception as e:
                 logger.error(f"LLM call failed safely: {e}. Defaulting to NO_ACTION.")
+                return None
+
+    async def invoke_json_evidence_safely(
+        self,
+        llm_callable: Callable,
+        compact_evidence: Any,
+        required_keys: tuple[str, ...] = ("summary",),
+    ) -> Optional[Dict[str, Any]]:
+        """Safely obtain non-authoritative evidence JSON, never an NMLI proposal.
+
+        This method shares the same rate/concurrency/timeout governance as the
+        proposal path but intentionally rejects any response carrying execution
+        fields.  It is appropriate only for qualified evidence synthesis.
+        """
+        if not await self._check_global_rate_limit():
+            logger.warning("LLM evidence rate limit exceeded. Defaulting to incomplete evidence.")
+            return None
+        async with self.semaphore:
+            try:
+                raw_output = await asyncio.wait_for(llm_callable(compact_evidence), timeout=self.timeout_seconds)
+                parsed = json.loads(raw_output)
+                if not isinstance(parsed, dict) or "tool_name" in parsed or "arguments" in parsed:
+                    logger.error("LLM evidence output attempted an execution-shaped payload.")
+                    return None
+                if any(key not in parsed for key in required_keys):
+                    logger.error("LLM evidence output missing required bounded fields.")
+                    return None
+                return parsed
+            except (asyncio.TimeoutError, json.JSONDecodeError, Exception) as error:
+                logger.error(f"LLM evidence synthesis failed safely: {error}")
                 return None

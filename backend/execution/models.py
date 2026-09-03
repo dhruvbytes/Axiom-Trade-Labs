@@ -14,6 +14,7 @@ class ExecutionState(str, Enum):
     RISK_AUTHORIZED = "RISK_AUTHORIZED"       # Token validated, ready to dispatch
     DISPATCHED = "DISPATCHED"                 # In-flight to MCP (Point of no return for mutations)
     SUCCEEDED = "SUCCEEDED"                   # MCP returned valid output
+    REJECTED = "REJECTED"                     # MCP tool executed but returned an application-level error (broker refused)
     FAILED_SAFE = "FAILED_SAFE"               # Failed cleanly or timed out BEFORE dispatch/mutation
     EXECUTION_UNCERTAIN = "EXECUTION_UNCERTAIN" # Timeout/Crash AFTER dispatch on a mutating tool (HARD STOP)
 
