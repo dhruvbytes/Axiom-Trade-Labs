@@ -1,6 +1,6 @@
 # backend/main.py
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -20,6 +20,9 @@ from backend.tool_router.nlu_extractor import asset_extractor
 # Autonomous Engine Lifecycles & UI Broadcaster
 from backend.autonomous.lifecycle import start_autonomous_system, stop_autonomous_system
 from backend.autonomous.ui_events import ui_broadcaster
+from backend.autonomous.settings_manager import runtime_policy_manager, RuntimePolicy
+from backend.autonomous.uncertainty import uncertainty_gate
+
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 import sys
@@ -119,6 +122,42 @@ class PortfolioResponse(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
+    
+settings_router = APIRouter(prefix="/api/settings")
+
+@settings_router.get("")
+def get_settings():
+    policy = runtime_policy_manager.get_current()
+    return {
+        "active_policy": policy.model_dump(),
+        "immutable_protected": [
+            "absolute_concentration_cap", 
+            "absolute_daily_loss_halt",
+            "freeze_timeout_seconds",
+            "options_max_spread"
+        ],
+        "uncertainty_state": uncertainty_gate.get_uncertainty_state("default_account")
+    }
+
+@settings_router.put("")
+async def apply_settings(new_policy: RuntimePolicy):
+    # Validation happens automatically via Pydantic. Out-of-bounds = 422.
+    try:
+        updated = await runtime_policy_manager.apply_policy(new_policy, source="USER")
+        return {"status": "success", "active_policy": updated.model_dump()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Persistence failed. Old policy remains active.")
+
+@settings_router.post("/reset")
+async def reset_settings():
+    try:
+        default_policy = RuntimePolicy()
+        updated = await runtime_policy_manager.apply_policy(default_policy, source="RESET")
+        return {"status": "success", "active_policy": updated.model_dump()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Reset failed. Old policy remains active.")
+
+app.include_router(settings_router)
 
 @app.get("/api/health")
 def health_check():

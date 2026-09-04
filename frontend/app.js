@@ -676,3 +676,227 @@ function renderLearning(outcomes) {
         `;
     });
 }
+
+// =========================================
+// AXIOM RUNTIME SETTINGS & POLICY UI LOGIC
+// =========================================
+
+const navSettingsBtn = document.getElementById('nav-settings-btn');
+const settingsWorkspace = document.getElementById('settings-workspace');
+
+const unsavedBanner = document.getElementById('unsaved-banner');
+const applySettingsBtn = document.getElementById('apply-settings-btn');
+const resetSettingsBtn = document.getElementById('reset-settings-btn');
+const settingsFreezeBanner = document.getElementById('settings-freeze-banner');
+const settingsTimer = document.getElementById('settings-timer');
+const setStatusBadge = document.getElementById('set-status-badge');
+const setVersion = document.getElementById('set-version');
+
+// Inputs
+const inputRisk = document.getElementById('input-risk');
+const valRisk = document.getElementById('val-risk');
+const inputQty = document.getElementById('input-qty');
+const valQty = document.getElementById('val-qty');
+const inputNewRisk = document.getElementById('input-new-risk');
+const inputAutoOptions = document.getElementById('input-auto-options');
+const inputScore = document.getElementById('input-score');
+const valScore = document.getElementById('val-score');
+const inputMove = document.getElementById('input-move');
+const valMove = document.getElementById('val-move');
+
+let activeBackendPolicy = {};
+let hasUnsavedChanges = false;
+let settingsFreezeInterval = null;
+
+// Navigation Routing
+navSettingsBtn.addEventListener('click', () => {
+    navSettingsBtn.classList.add('active');
+    navDashboardBtn.classList.remove('active');
+    navAutonomousBtn.classList.remove('active');
+    
+    dashboardWorkspace.classList.add('hidden');
+    autonomousWorkspace.classList.add('hidden');
+    settingsWorkspace.classList.remove('hidden');
+    
+    fetchSettingsState();
+});
+
+// Override Dashboard & Auto Engine clicks to hide Settings
+navDashboardBtn.addEventListener('click', () => {
+    settingsWorkspace.classList.add('hidden');
+});
+navAutonomousBtn.addEventListener('click', () => {
+    settingsWorkspace.classList.add('hidden');
+});
+
+// Fetch Settings from Backend (Authoritative State)
+async function fetchSettingsState() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/settings`);
+        if (!res.ok) throw new Error("Failed to fetch settings.");
+        const data = await res.json();
+        
+        activeBackendPolicy = data.active_policy;
+        populateSettingsUI(activeBackendPolicy);
+        
+        // Handle Freeze State on Settings Page
+        const unc = data.uncertainty_state;
+        if (unc && unc.is_frozen) {
+            settingsFreezeBanner.classList.remove('hidden');
+            setStatusBadge.textContent = "FROZEN";
+            setStatusBadge.className = "status-badge-frozen";
+            resetSettingsBtn.disabled = true; // BUG FIX: Lock during freeze
+            applySettingsBtn.disabled = true; // BUG FIX: Lock during freeze
+            startSettingsFreezeTimer(unc.expires_at_utc);
+        } else {
+            settingsFreezeBanner.classList.add('hidden');
+            setStatusBadge.textContent = "ACTIVE";
+            setStatusBadge.className = "status-badge-active";
+            resetSettingsBtn.disabled = false; // BUG FIX: Unlock when active
+            if (settingsFreezeInterval) clearInterval(settingsFreezeInterval);
+        }
+        
+        checkUnsavedState();
+    } catch (e) {
+        console.error("Settings sync error:", e);
+    }
+}
+
+function populateSettingsUI(policy) {
+    inputRisk.value = policy.risk_per_trade_pct * 100;
+    valRisk.textContent = `${(policy.risk_per_trade_pct * 100).toFixed(1)}%`;
+
+    inputQty.value = policy.max_auto_stock_qty;
+    valQty.textContent = `${policy.max_auto_stock_qty} share${policy.max_auto_stock_qty > 1 ? 's' : ''}`;
+
+    inputNewRisk.checked = policy.allow_new_risk;
+    inputAutoOptions.checked = policy.allow_auto_options;
+
+    inputScore.value = policy.minimum_action_score;
+    valScore.textContent = policy.minimum_action_score.toFixed(2);
+
+    inputMove.value = policy.material_move_pct * 100;
+    valMove.textContent = `${(policy.material_move_pct * 100).toFixed(1)}%`;
+}
+
+// Slider & Toggle Change Listeners (Draft-only, NO BACKEND CALL)
+[inputRisk, inputQty, inputNewRisk, inputAutoOptions, inputScore, inputMove].forEach(input => {
+    input.addEventListener('input', () => {
+        // Update live draft labels instantly
+        valRisk.textContent = `${parseFloat(inputRisk.value).toFixed(1)}%`;
+        valQty.textContent = `${inputQty.value} share${inputQty.value > 1 ? 's' : ''}`;
+        valScore.textContent = parseFloat(inputScore.value).toFixed(2);
+        valMove.textContent = `${parseFloat(inputMove.value).toFixed(1)}%`;
+        
+        checkUnsavedState();
+    });
+});
+
+function checkUnsavedState() {
+    const currentDraft = getDraftPolicy();
+    hasUnsavedChanges = JSON.stringify(currentDraft) !== JSON.stringify(activeBackendPolicy);
+    
+    // Ensure we don't re-enable if system is currently frozen
+    const isFrozen = !settingsFreezeBanner.classList.contains('hidden');
+
+    if (hasUnsavedChanges) {
+        unsavedBanner.classList.remove('hidden');
+        applySettingsBtn.disabled = isFrozen; // Unblock ONLY if not frozen
+    } else {
+        unsavedBanner.classList.add('hidden');
+        applySettingsBtn.disabled = true;
+    }
+}
+
+function getDraftPolicy() {
+    return {
+        allow_auto_options: inputAutoOptions.checked,
+        allow_new_risk: inputNewRisk.checked,
+        max_auto_stock_qty: parseInt(inputQty.value),
+        risk_per_trade_pct: parseFloat(inputRisk.value) / 100,
+        material_move_pct: parseFloat(inputMove.value) / 100,
+        minimum_action_score: parseFloat(inputScore.value)
+    };
+}
+
+// APPLY CHANGES (PUT /api/settings)
+applySettingsBtn.addEventListener('click', async () => {
+    applySettingsBtn.disabled = true;
+    applySettingsBtn.textContent = 'APPLYING...';
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/settings`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(getDraftPolicy())
+        });
+        
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || "Validation failed.");
+        }
+        
+        const data = await res.json();
+        activeBackendPolicy = data.active_policy;
+        populateSettingsUI(activeBackendPolicy);
+        checkUnsavedState();
+        
+        // Refresh state to grab authoritative freeze timestamp
+        fetchSettingsState();
+        alert("Settings applied successfully! System entered 60s safety pause.");
+    } catch (e) {
+        alert(`Failed to apply settings: ${e.message}`);
+    } finally {
+        applySettingsBtn.textContent = 'APPLY CHANGES';
+    }
+});
+
+// RESET TO DEFAULTS (POST /api/settings/reset)
+resetSettingsBtn.addEventListener('click', async () => {
+    if (!confirm("Reset all user-controlled settings to original defaults? The system will enter a 60-second safety pause.")) return;
+    
+    resetSettingsBtn.disabled = true;
+    resetSettingsBtn.textContent = 'RESETTING...';
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/settings/reset`, { method: 'POST' });
+        if (!res.ok) throw new Error("Reset failed.");
+        
+        const data = await res.json();
+        activeBackendPolicy = data.active_policy;
+        populateSettingsUI(activeBackendPolicy);
+        checkUnsavedState();
+        
+        fetchSettingsState();
+        alert("Settings restored to defaults. Safety pause active.");
+    } catch (e) {
+        alert(`Reset failed: ${e.message}`);
+        resetSettingsBtn.disabled = false; // BUG FIX: Unlock if API fails
+    } finally {
+        resetSettingsBtn.textContent = 'RESET TO DEFAULTS';
+    }
+});
+
+// Authoritative Freeze Countdown Timer
+function startSettingsFreezeTimer(expiresAtUtc) {
+    if (settingsFreezeInterval) clearInterval(settingsFreezeInterval);
+    if (!expiresAtUtc) {
+        settingsTimer.innerHTML = "Waiting for recovery signal...";
+        return;
+    }
+
+    const expireMs = new Date(expiresAtUtc).getTime();
+    
+    settingsFreezeInterval = setInterval(() => {
+        const left = Math.floor((expireMs - Date.now()) / 1000);
+        if (left <= 0) {
+            settingsTimer.innerHTML = "Waiting for backend recovery signal...";
+            clearInterval(settingsFreezeInterval);
+            fetchSettingsState(); // Re-poll authoritative backend state
+        } else {
+            const m = Math.floor(left / 60).toString().padStart(2, '0');
+            const s = (left % 60).toString().padStart(2, '0');
+            settingsTimer.innerHTML = `RESUMING IN <span>${m}:${s}</span>`;
+        }
+    }, 1000);
+}

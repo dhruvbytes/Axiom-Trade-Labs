@@ -28,6 +28,12 @@
                     <span>Autonomous Engine</span>
                 </button>
 
+
+                <button class="nav-item" id="nav-settings-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    <span>Settings</span>
+                </button>
+
                 <button class="nav-item" id="toggle-chat-btn">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                     <span>Trading Agent</span>
@@ -224,6 +230,155 @@
                     </div>
                 </div>
             </div>
+
+             <!-- SETTINGS WORKSPACE -->
+            <div id="settings-workspace" class="axiom-workspace hidden" style="flex-direction: column; overflow-y: auto;">
+                
+                <!-- HEADER -->
+                <div class="settings-header-box">
+                    <div>
+                        <h2>Settings</h2>
+                        <p class="settings-subtitle">Control how Axiom Trade Labs manages autonomous trading decisions.</p>
+                    </div>
+                    <div class="settings-meta-pill">
+                        <span>Policy Version: <strong id="set-version">v1</strong></span>
+                        <span id="set-status-badge" class="status-badge-active">ACTIVE</span>
+                    </div>
+                </div>
+
+                <!-- FREEZE BANNER (Shared Architecture) -->
+                <div id="settings-freeze-banner" class="auto-banner frozen hidden" style="margin-bottom: 20px;">
+                    <div class="banner-title"><span class="pulse-dot-amber"></span> FROZEN — UNCERTAINTY</div>
+                    <div class="banner-desc">New trading decisions are temporarily paused while the system safely transitions.</div>
+                    <div class="banner-timer" id="settings-timer">Waiting for recovery signal...</div>
+                </div>
+
+                <!-- UNSAVED CHANGES INDICATOR -->
+                <div id="unsaved-banner" class="unsaved-banner hidden">
+                    <span>⚠️ UNSAVED CHANGES — These changes are not active yet.</span>
+                </div>
+
+                <!-- MUST READ BEFORE CHANGING SETTINGS -->
+                <div class="settings-card safety-card">
+                    <h3>MUST READ BEFORE CHANGING SETTINGS</h3>
+                    <p class="card-intro">These settings change how the autonomous trading system behaves. They do not remove the system's built-in safety protections.</p>
+                    <ul class="safety-list">
+                        <li>Every successful Apply will temporarily pause NEW trading decisions for 60 seconds.</li>
+                        <li>This pause is intentional. It gives the system a short safety window after a policy change.</li>
+                        <li>Your brokerage account is NOT frozen. Existing orders and already-authorized activity are NOT cancelled.</li>
+                        <li>Market data and monitoring continue running. After the safety window ends, the system resumes normal operations.</li>
+                        <li>Moving sliders does NOT trigger the pause. The pause happens only after you successfully press Apply.</li>
+                        <li>Reset to Defaults restores original project settings and also starts the same 60-second safety pause.</li>
+                        <li>Setting something more aggressive does NOT guarantee a trade. The system can still choose NO TRADE when conditions are unsafe.</li>
+                    </ul>
+                </div>
+
+                <!-- SETTINGS GRID -->
+                <div class="settings-grid">
+                    
+                    <!-- RISK CONTROLS -->
+                    <div class="settings-card">
+                        <h3>RISK CONTROLS</h3>
+                        
+                        <div class="setting-item">
+                            <div class="setting-label-row">
+                                <span class="setting-name">Risk per Trade</span>
+                                <span class="setting-val-display" id="val-risk">1.0%</span>
+                            </div>
+                            <p class="setting-desc">Controls how much risk the system may use when sizing a new trade. Higher values can allow larger positions, while lower values keep sizing more conservative.</p>
+                            <div class="setting-bounds">Default: 1.0% | Allowed: 0.1% – 2.0%</div>
+                            <input type="range" id="input-risk" min="0.1" max="2.0" step="0.1" value="1.0" class="setting-slider">
+                            <div class="range-labels"><span>0.1% (Conservative)</span><span>2.0% (Aggressive)</span></div>
+                        </div>
+
+                        <div class="setting-item" style="margin-top: 24px;">
+                            <div class="setting-label-row">
+                                <span class="setting-name">Max Auto Stock Quantity</span>
+                                <span class="setting-val-display" id="val-qty">1 share</span>
+                            </div>
+                            <p class="setting-desc">Sets the maximum number of shares the autonomous system may request for a stock order. This controls share quantity, not the number of trades or API requests. Changing this value does not affect options.</p>
+                            <div class="setting-bounds">Default: 1 | Allowed: 1 – 10 shares</div>
+                            <input type="range" id="input-qty" min="1" max="10" step="1" value="1" class="setting-slider">
+                            <div class="range-labels"><span>1 share</span><span>10 shares</span></div>
+                        </div>
+                    </div>
+
+                    <!-- AUTONOMOUS CONTROLS -->
+                    <div class="settings-card">
+                        <h3>AUTONOMOUS CONTROLS</h3>
+                        
+                        <div class="setting-item toggle-row">
+                            <div>
+                                <span class="setting-name">Allow New Risk</span>
+                                <p class="setting-desc">Turning this off does not shut down the autonomous system. It simply prevents new risk-increasing positions while still allowing the system to reduce existing exposure when appropriate.</p>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="input-new-risk" checked>
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+
+                        <div class="setting-item toggle-row" style="margin-top: 24px;">
+                            <div>
+                                <span class="setting-name">Auto Options</span>
+                                <p class="setting-desc">When enabled, the autonomous system may consider eligible CALL and PUT opportunities. When disabled, autonomous options opportunities are not considered. Stock trading remains available.</p>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="input-auto-options" checked>
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- DECISION SENSITIVITY -->
+                    <div class="settings-card">
+                        <h3>DECISION SENSITIVITY</h3>
+                        
+                        <div class="setting-item">
+                            <div class="setting-label-row">
+                                <span class="setting-name">Minimum Action Score</span>
+                                <span class="setting-val-display" id="val-score">0.50</span>
+                            </div>
+                            <p class="setting-desc">Higher values make the system more selective and can result in more NO TRADE decisions. Lower values allow more opportunities to be considered.</p>
+                            <div class="setting-bounds">Default: 0.50 | Allowed: 0.50 – 0.80</div>
+                            <input type="range" id="input-score" min="0.50" max="0.80" step="0.01" value="0.50" class="setting-slider">
+                            <div class="range-labels"><span>0.50 (Active)</span><span>0.80 (Selective)</span></div>
+                        </div>
+
+                        <div class="setting-item" style="margin-top: 24px;">
+                            <div class="setting-label-row">
+                                <span class="setting-name">Material Move Threshold</span>
+                                <span class="setting-val-display" id="val-move">1.0%</span>
+                            </div>
+                            <p class="setting-desc">Controls how large a market move needs to be before the system treats it as meaningful enough to react to.</p>
+                            <div class="setting-bounds">Default: 1.0% | Allowed: 0.5% – 3.0%</div>
+                            <input type="range" id="input-move" min="0.5" max="3.0" step="0.1" value="1.0" class="setting-slider">
+                            <div class="range-labels"><span>0.5% (Responsive)</span><span>3.0% (Filtered)</span></div>
+                        </div>
+                    </div>
+
+                    <!-- SYSTEM PROTECTED -->
+                    <div class="settings-card protected-card">
+                        <h3>SYSTEM PROTECTED</h3>
+                        <p class="settings-subtitle" style="margin-bottom: 16px;">These protections cannot be changed from Settings.</p>
+                        
+                        <div class="protected-row"><span>🔒 Absolute Portfolio Concentration</span> <span class="protected-badge">Protected</span></div>
+                        <div class="protected-row"><span>🔒 Daily Loss Halt</span> <span class="protected-badge">Protected</span></div>
+                        <div class="protected-row"><span>🔒 Decision Safety Pause</span> <span class="protected-badge">60 seconds</span></div>
+                        <div class="protected-row"><span>🔒 Options Spread Protection</span> <span class="protected-badge">10% max</span></div>
+                        <div class="protected-row"><span>🔒 Options DTE Protection</span> <span class="protected-badge">14–45 days</span></div>
+                        <div class="protected-row"><span>🔒 Execution & Broker Safety</span> <span class="protected-badge">Protected</span></div>
+                    </div>
+
+                </div>
+
+                <!-- STICKY ACTION BAR -->
+                <div class="settings-action-bar">
+                    <button id="reset-settings-btn" class="hud-action" style="border-color: var(--color-down); color: var(--color-down);">RESET TO DEFAULTS</button>
+                    <button id="apply-settings-btn" class="action-btn" style="padding: 10px 24px; background: var(--color-accent);" disabled>APPLY CHANGES</button>
+                </div>
+
+            </div>    
 
         </main>
         

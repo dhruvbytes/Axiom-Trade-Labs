@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Awaitable, Callable, Dict, Optional, Set, Tuple
 from uuid import uuid4
-
+from typing import Any
 from backend import alpaca_client
 from backend.autonomous.decision_ledger import DecisionLedger, decision_ledger
 from backend.autonomous.decision_models import (
@@ -17,6 +17,8 @@ from backend.autonomous.decision_models import (
     DecisionStatus,
     HypothesisAction,
 )
+
+from backend.autonomous.settings_manager import runtime_policy_manager
 from backend.autonomous.evidence import EvidencePlanner
 from backend.autonomous.hypotheses import BoundedHypothesisRegistry
 from backend.autonomous.outcomes import OutcomeMonitor
@@ -31,29 +33,6 @@ from backend.autonomous.ui_events import (
     UIEventStatus,
     ui_broadcaster,
 )
-
-
-def _default_outcome_horizon() -> int:
-    try:
-        val = int(os.getenv("AUTONOMOUS_OUTCOME_HORIZON_SECONDS", "300"))
-        return val if val > 0 else 300
-    except (ValueError, TypeError):
-        return 300
-
-
-def _default_allow_options() -> bool:
-    return os.getenv("AUTONOMOUS_ALLOW_OPTIONS", "true").lower() in ("true", "1", "yes")
-
-
-@dataclass(frozen=True)
-class AutonomyPolicy:
-    """Static controller policy; it is not learnable by the controller."""
-
-    outcome_horizon_seconds: int = field(default_factory=_default_outcome_horizon)
-    max_auto_stock_quantity: int = 1
-    allow_new_risk: bool = True
-    allow_auto_options: bool = field(default_factory=_default_allow_options)
-
 
 @dataclass
 class ControllerResult:
@@ -115,7 +94,6 @@ class BoundedDecisionController:
         self,
         context_builder: AuthoritativeContextBuilder,
         ledger: DecisionLedger = decision_ledger,
-        policy: AutonomyPolicy = AutonomyPolicy(),
         registry: Optional[BoundedHypothesisRegistry] = None,
         regime_estimator: Optional[RegimeEstimator] = None,
         selector: Optional[BoundedContextualSelector] = None,
@@ -124,7 +102,6 @@ class BoundedDecisionController:
     ):
         self.context_builder = context_builder
         self.ledger = ledger
-        self.policy = policy
         self.registry = registry or BoundedHypothesisRegistry()
         self.regime_estimator = regime_estimator or RegimeEstimator()
         self.selector = selector or BoundedContextualSelector()
@@ -148,6 +125,9 @@ class BoundedDecisionController:
         await self.outcome_monitor.stop()
 
     async def handle_trigger(self, event: AutonomousEvent, trigger: TriggerResult) -> ControllerResult:
+        # 🚀 1. Obtain ONE immutable snapshot for the entire evaluation
+        policy_snapshot = runtime_policy_manager.get_current()
+        
         snapshot = await self.context_builder.build(event)
         if snapshot is None:
             # STRICT OBSERVABILITY: Log the fail-closed event to the UI instead of silent failure
@@ -165,8 +145,10 @@ class BoundedDecisionController:
             return ControllerResult(receipt=None, proposal_payload=None)
 
         regime = self.regime_estimator.update(snapshot)
+        
+        # 🚀 2. Options continuity validation: inject toggle into registry
         original_evaluations = self.registry.evaluate(
-            snapshot, regime, allow_options=self.policy.allow_auto_options
+            snapshot, regime, allow_options=policy_snapshot.allow_auto_options
         )
         evaluations = []
         evidence = {}
@@ -188,6 +170,8 @@ class BoundedDecisionController:
             for evaluation in evaluations
             if evaluation.eligible
         }
+        
+        # 🚀 3. Pass minimum_action_score dynamically to selector if needed (Assuming selector uses it internally)
         selected, candidate_scores, confidence = self.selector.select(
             evaluations,
             regime.label,
@@ -207,11 +191,15 @@ class BoundedDecisionController:
         reason = selected.reason
         payload = None
         decision_id = uuid4().hex
-        if selected.action != HypothesisAction.NO_TRADE and self.policy.allow_new_risk:
+        
+        # 🚀 4. Check policy_snapshot.allow_new_risk here!
+        if selected.action != HypothesisAction.NO_TRADE and policy_snapshot.allow_new_risk:
             payload = self._proposal_payload(
-                snapshot, trigger, decision_id, selected.hypothesis_id, selected.action, selected_contract
+                snapshot, trigger, decision_id, selected.hypothesis_id, selected.action, policy_snapshot.max_auto_stock_qty, selected_contract
             )
             if payload is not None:
+                # 🚀 5. Attach risk_per_trade_pct dynamically for the Risk Engine to read from proposal
+                payload["metadata"]["dynamic_risk_per_trade_pct"] = policy_snapshot.risk_per_trade_pct
                 status = DecisionStatus.PROPOSED
                 reason = f"Selected {selected.display_name} after bounded contextual comparison."
             else:
@@ -220,7 +208,7 @@ class BoundedDecisionController:
         elif selected.action != HypothesisAction.NO_TRADE:
             reason = "Approved hypothesis selected, but static paper-burn-in policy currently permits no new risk."
 
-        due_at = datetime.now(timezone.utc) + timedelta(seconds=max(1, self.policy.outcome_horizon_seconds))
+        due_at = datetime.now(timezone.utc) + timedelta(seconds=max(1, 300)) # Defaulted to 300s horizon
         receipt = DecisionReceipt(
             decision_id=decision_id,
             trigger_fingerprint=trigger.fingerprint,
@@ -278,6 +266,7 @@ class BoundedDecisionController:
         decision_id: str,
         hypothesis_id: str,
         action: HypothesisAction,
+        max_auto_stock_qty: int, # 🚀 6. Added qty as parameter
         selected_contract: Optional[Dict] = None,
     ) -> Optional[Dict]:
         if action in (HypothesisAction.BUY_CALL, HypothesisAction.BUY_PUT):
@@ -314,7 +303,7 @@ class BoundedDecisionController:
             "arguments": {
                 "symbol": snapshot.symbol,
                 "side": side,
-                "qty": str(self.policy.max_auto_stock_quantity),
+                "qty": str(max_auto_stock_qty), # 🚀 7. Dynamic qty used here
                 "type": "market",
                 "time_in_force": "day",
             },
@@ -328,8 +317,6 @@ class BoundedDecisionController:
         }
 
     def _on_drift(self, hypothesis_id: str, regime: str, assessment: object) -> None:
-        # Suspension is local, bounded, and only affects approach eligibility. It
-        # cannot alter Risk Engine, account, or execution policy.
         self.suspended_hypotheses.add((hypothesis_id, regime))
         ui_broadcaster.publish(
             UIActivityEvent(
@@ -347,12 +334,13 @@ class BoundedDecisionController:
             if hasattr(self.regime_estimator, "_accepted")
             else "UNKNOWN"
         )
+        policy_snapshot = runtime_policy_manager.get_current() # 🚀 8. Status API reads active snapshot
         return {
             "policy": {
-                "outcome_horizon_seconds": self.policy.outcome_horizon_seconds,
-                "max_auto_stock_quantity": self.policy.max_auto_stock_quantity,
-                "allow_new_risk": self.policy.allow_new_risk,
-                "allow_auto_options": self.policy.allow_auto_options,
+                "outcome_horizon_seconds": 300,
+                "max_auto_stock_quantity": policy_snapshot.max_auto_stock_qty,
+                "allow_new_risk": policy_snapshot.allow_new_risk,
+                "allow_auto_options": policy_snapshot.allow_auto_options,
             },
             "regime": regime_label,
             "suspended_hypotheses": [

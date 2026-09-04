@@ -21,7 +21,16 @@ class RegimeLabel(str, Enum):
     STRESS = "STRESS"
     UNKNOWN = "UNKNOWN"
 
+class RuntimePolicy(BaseModel):
+    allow_auto_options: bool = Field(default=True, description="Enable autonomous option hypotheses")
+    allow_new_risk: bool = Field(default=True, description="Permit new risk-increasing exposure")
+    max_auto_stock_qty: int = Field(default=1, ge=1, le=10, description="Max autonomous stock quantity")
+    risk_per_trade_pct: float = Field(default=0.01, ge=0.001, le=0.02, description="Risk allocation per trade")
+    material_move_pct: float = Field(default=0.01, ge=0.005, le=0.03, description="Trigger sensitivity")
+    minimum_action_score: float = Field(default=0.50, ge=0.50, le=0.80, description="Confidence threshold")
 
+    model_config = ConfigDict(extra="forbid")
+        
 class DecisionStatus(str, Enum):
     NO_TRADE = "NO_TRADE"
     PROPOSED = "PROPOSED"
