@@ -27,21 +27,21 @@ class AlpacaMCPClientManager:
             "PYTHONUNBUFFERED": "1"
         })
 
-        # 2. RESOLVE MCP SERVER EXECUTABLE (Supports venv, Scripts/, and PATH)
-        venv_scripts = os.path.dirname(sys.executable)
+        # LINUX & RAILWAY SAFE MCP RESOLUTION
         exe_name = "alpaca-mcp-server.exe" if sys.platform == "win32" else "alpaca-mcp-server"
-        mcp_exec = os.path.join(venv_scripts, exe_name)
+        mcp_exec = shutil.which(exe_name) or shutil.which("alpaca-mcp-server")
         
-        if not os.path.exists(mcp_exec):
-            alt_exec = os.path.join(venv_scripts, "Scripts", exe_name)
-            if os.path.exists(alt_exec):
+        if not mcp_exec or not os.path.exists(mcp_exec):
+            venv_scripts = os.path.dirname(sys.executable)
+            fallback_exec = os.path.join(venv_scripts, exe_name)
+            alt_exec = os.path.join(venv_scripts, "Scripts", exe_name) if sys.platform == "win32" else os.path.join(venv_scripts, "bin", exe_name)
+            
+            if os.path.exists(fallback_exec):
+                mcp_exec = fallback_exec
+            elif os.path.exists(alt_exec):
                 mcp_exec = alt_exec
             else:
-                which_exec = shutil.which(exe_name) or shutil.which("alpaca-mcp-server")
-                if which_exec and os.path.exists(which_exec):
-                    mcp_exec = which_exec
-                else:
-                    raise RuntimeError(f"CRITICAL: Server EXECUTABLE NOT FOUND. Looked at {mcp_exec}, {alt_exec}, and PATH. Please run: python -m pip install alpaca-mcp-server")
+                raise RuntimeError(f"CRITICAL: MCP Server EXECUTABLE NOT FOUND. Looked in PATH and {venv_scripts}. Please ensure 'alpaca-mcp-server' is installed.")
 
         server_params = StdioServerParameters(
             command=mcp_exec,

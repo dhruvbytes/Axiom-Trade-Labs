@@ -1,8 +1,11 @@
 # backend/main.py
 
-from fastapi import APIRouter, FastAPI, HTTPException, Request
+import os
+from fastapi import APIRouter, FastAPI, HTTPException, Request, Depends
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from backend.config import DEMO_ACCESS_TOKEN
 from pydantic import BaseModel
 from typing import List
 from contextlib import asynccontextmanager
@@ -122,8 +125,21 @@ class PortfolioResponse(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
-    
-settings_router = APIRouter(prefix="/api/settings")
+
+# 🚀 DEMO AUTHENTICATION FUNCTION
+async def verify_demo_token(request: Request):
+    """Secures all endpoints. Checks header first, fallback to query param for SSE."""
+    token = request.headers.get("Authorization")
+    if not token:
+        token = request.query_params.get("token")
+    else:
+        token = token.replace("Bearer ", "")
+        
+    if token != DEMO_ACCESS_TOKEN:
+        raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing Demo Token")
+
+# 🚀 APPLY AUTH TO SETTINGS ROUTER
+settings_router = APIRouter(prefix="/api/settings", dependencies=[Depends(verify_demo_token)])
 
 @settings_router.get("")
 def get_settings():
@@ -163,7 +179,7 @@ app.include_router(settings_router)
 def health_check():
     return {"status": "ok"}
 
-@app.get("/api/activity-stream")
+@app.get("/api/activity-stream", dependencies=[Depends(verify_demo_token)])
 async def activity_stream(request: Request):
     """
     SSE Endpoint for Live UI Activity Console.
@@ -207,7 +223,7 @@ async def activity_stream(request: Request):
         }
     )
 
-@app.get("/api/portfolio", response_model=PortfolioResponse)
+@app.get("/api/portfolio", response_model=PortfolioResponse, dependencies=[Depends(verify_demo_token)])
 def get_portfolio():
     try:
         summary = alpaca_client.get_portfolio_summary()
@@ -221,7 +237,7 @@ def get_portfolio():
         print(f"Backend Internal Error: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch Alpaca account data.")
 
-@app.post("/api/chat")
+@app.post("/api/chat", dependencies=[Depends(verify_demo_token)])
 async def chat_with_agent(request: ChatRequest):
     try:
         account = alpaca_client.trading_client.get_account()
@@ -250,14 +266,14 @@ async def chat_with_agent(request: ChatRequest):
         print(f"Agent Error: {e}")
         raise HTTPException(status_code=500, detail="Failed to process request.")
 
-@app.get("/api/autonomous/state")
+@app.get("/api/autonomous/state", dependencies=[Depends(verify_demo_token)])
 def get_autonomous_state():
     """Exposes public status snapshot of the bounded autonomous decision controller."""
     from backend.autonomous.lifecycle import get_decision_controller
     controller = get_decision_controller()
     return controller.status_snapshot()
 
-@app.get("/api/autonomous/dashboard-state")
+@app.get("/api/autonomous/dashboard-state", dependencies=[Depends(verify_demo_token)])
 def get_autonomous_dashboard_state():
     from backend.autonomous.lifecycle import get_decision_controller
     from backend.autonomous.decision_ledger import decision_ledger
@@ -276,7 +292,7 @@ def get_autonomous_dashboard_state():
         "recent_learning": decision_ledger.get_recent_outcomes(15)
     }
 
-@app.post("/api/admin/reconciliation/check")
+@app.post("/api/admin/reconciliation/check", dependencies=[Depends(verify_demo_token)])
 async def trigger_admin_reconciliation():
     """Admin-only trigger for uncertainty reconciliation.
 
@@ -288,6 +304,11 @@ async def trigger_admin_reconciliation():
     result = await reconciliation_service.reconcile_observations()
     return {"status": result.status, "reason": result.reason}
 
+# 🚀 MOUNT FRONTEND (Must be at the very bottom after all API routes)
+app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("backend.main:app", host="127.0.0.1", port=8000, reload=True)
+    # 🚀 Railway passes PORT environment variable dynamically
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=port)
