@@ -457,3 +457,128 @@ input:checked + .slider:before { transform: translateX(22px); }
     .settings-grid { grid-template-columns: 1fr; }
     .safety-card { grid-column: span 1; }
 }
+
+/* =========================================
+   HOW AXIOM WORKS / FAQ ACCORDION STYLING
+========================================= */
+.faq-accordion { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; transition: border-color 0.2s; }
+.faq-accordion:hover { border-color: var(--border-light); }
+.faq-question { width: 100%; background: transparent; border: none; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; color: var(--text-primary); font-size: 13px; font-weight: 600; cursor: pointer; text-align: left; font-family: var(--font-sans); }
+.faq-question:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -2px; }
+.faq-arrow { font-size: 10px; color: var(--text-muted); transition: transform 0.2s ease; }
+.faq-question[aria-expanded="true"] .faq-arrow { transform: rotate(180deg); color: var(--color-accent); }
+.faq-answer { padding: 0 20px 20px 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; border-top: 1px solid var(--border-color); background: rgba(0,0,0,0.1); }
+.faq-answer p { margin-top: 12px; }
+
+/* =========================================
+   PROMPT GUIDE UI & DROPDOWNS
+========================================= */
+.prompt-guide {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    right: 400px; /* Sits exactly left of the chat drawer */
+    width: 380px;
+    background: var(--bg-surface);
+    border-left: 1px solid var(--border-color);
+    z-index: 49; /* Just under chat drawer z-index 50 */
+    display: flex;
+    flex-direction: column;
+    transform: translateX(200%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -10px 0 30px rgba(0,0,0,0.4);
+}
+
+.prompt-guide.open {
+    transform: translateX(0);
+}
+
+.prompt-guide-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.prompt-guide-note {
+    background: rgba(59, 130, 246, 0.05);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    color: var(--text-secondary);
+    padding: 12px;
+    font-size: 11px;
+    border-radius: 4px;
+    line-height: 1.5;
+    margin-bottom: 8px;
+}
+
+.prompt-guide-note strong { color: var(--color-accent); display: block; margin-top: 4px; }
+
+/* Prompt Accordions */
+.prompt-accordion {
+    background: var(--bg-base);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.prompt-accordion-btn {
+    width: 100%;
+    background: transparent;
+    border: none;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    border-bottom: 1px solid transparent;
+}
+
+.prompt-accordion-btn[aria-expanded="true"] { border-bottom-color: var(--border-color); }
+.prompt-accordion-btn[aria-expanded="true"] .faq-arrow { transform: rotate(180deg); color: var(--color-accent); }
+
+.prompt-accordion-content {
+    padding: 12px;
+    background: rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 240px; /* Forces scroll if content is too long */
+    overflow-y: auto; /* Enables vertical scrolling */
+}
+
+/* Custom minimal scrollbar for the accordion content */
+.prompt-accordion-content::-webkit-scrollbar { width: 4px; }
+.prompt-accordion-content::-webkit-scrollbar-track { background: transparent; }
+.prompt-accordion-content::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
+.prompt-accordion-content::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+.prompt-card {
+    width: 100%;
+    text-align: left;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    padding: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.prompt-card:hover { border-color: var(--color-accent); background: var(--bg-surface-hover); }
+
+.prompt-type {
+    font-size: 9px; font-weight: 700; letter-spacing: 1px; padding: 2px 6px;
+    border-radius: 3px; margin-bottom: 8px; display: inline-block;
+}
+
+.read-prompt .prompt-type { background: rgba(59, 130, 246, 0.1); color: var(--color-accent); border: 1px solid rgba(59, 130, 246, 0.2); }
+.action-prompt .prompt-type { background: rgba(245, 158, 11, 0.1); color: var(--color-warning); border: 1px solid rgba(245, 158, 11, 0.2); }
+
+.prompt-text { font-family: var(--font-mono); font-size: 11px; color: var(--text-primary); display: block; line-height: 1.5; }
+
+@media (max-width: 1100px) { .prompt-guide { display: none !important; } }

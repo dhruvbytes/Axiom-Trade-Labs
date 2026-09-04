@@ -38,6 +38,12 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                     <span>Trading Agent</span>
                 </button>
+
+                <button class="nav-item" id="nav-how-it-works-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    <span>How Axiom Works</span>
+                </button>
+
             </nav>
             <div class="sidebar-footer">
                 <div id="health-status" class="status-indicator offline">
@@ -380,8 +386,432 @@
 
             </div>    
 
+             <!-- HOW AXIOM WORKS WORKSPACE -->
+            <div id="how-it-works-workspace" class="axiom-workspace hidden" style="flex-direction: column; overflow-y: auto; padding-bottom: 60px;">
+                <div class="settings-header-box">
+                    <div>
+                        <h2>How Axiom Works</h2>
+                        <p class="settings-subtitle">A transparent look at how Axiom combines AI reasoning with deterministic financial controls.</p>
+                    </div>
+                </div>
+
+                <!-- HERO OVERVIEW -->
+                <div class="settings-card safety-card" style="margin-bottom: 24px;">
+                    <h3>ARCHITECTURAL OVERVIEW</h3>
+                    <p class="card-intro">Axiom Trade Labs is a hybrid trading system. AI and analytical components help interpret intent, context and market opportunities, while a deterministic financial core controls risk, admission and execution.</p>
+                    
+                    <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.3); padding: 12px 16px; border-radius: 4px; margin-top: 12px; margin-bottom: 12px;">
+                        <div style="font-size: 11px; font-weight: 700; color: var(--color-accent); font-family: var(--font-mono); margin-bottom: 4px;">DUAL-MODE HYBRID ARCHITECTURE</div>
+                        <p style="font-size: 12px; color: var(--text-primary); line-height: 1.5;">You are never locked into a single workflow. Axiom combines an <strong>Autonomous Engine</strong> (for hands-free, continuous market scanning and execution) with an interactive <strong>AI Trading Assistant</strong> (via the Trading Agent chat drawer). You can let the system run autonomously or chat with the agent directly—both feed into the exact same secure, deterministic risk core.</p>
+                    </div>
+
+                    <div style="background: var(--bg-base); border: 1px solid var(--border-color); padding: 16px; border-radius: 6px; font-family: var(--font-mono); font-size: 11px; margin-top: 12px; line-height: 1.6; color: var(--text-secondary);">
+                        USER / MARKET DATA<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+                        AI / ANALYSIS LAYER<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+                        SCSV ROUTER / CONTEXT<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+                        HYPOTHESIS + SELECTION<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+                        RISK ENGINE + ADMISSION<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+                        CORE-X EXECUTION<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+                        ALPACA BROKERAGE
+                    </div>
+                    <p style="font-size: 11px; color: var(--color-accent); margin-top: 12px; font-weight: 600;">Key Principle: AI can interpret and propose. Deterministic controls govern whether an action is allowed to reach execution.</p>
+                </div>
+
+                <!-- FAQ ACCORDION CONTAINER -->
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <h3 style="font-size: 12px; font-weight: 700; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 4px;">SYSTEM ARCHITECTURE & FAQ</h3>
+                    
+                    <!-- Accordion Item 1 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-1">
+                          <span>1. What is Axiom Trade Labs? (Hybrid Autonomous System)</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-1" class="faq-answer hidden">
+                          <p>Axiom Trade Labs is a dual-mode hybrid trading platform. It gives you complete flexibility: you can use the background <strong>Autonomous Engine</strong> for hands-free, rules-driven execution across market regimes, or you can interact directly with the <strong>AI Trading Assistant</strong> via chat for portfolio queries and analysis. Both the automated engine and the manual assistant operate under the exact same strict, deterministic risk and safety core.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 2 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-2">
+                          <span>2. How does Axiom make a trading decision?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-2" class="faq-answer hidden">
+                          <p>Decisions follow a strict multi-stage pipeline: Market Event or user intent → Context Snapshot → Hypothesis Evaluation (e.g., Trend Continuation, Mean Reversion, Defensive Reduction) → Contextual Selection → Proposal Generation → Shared Admission → Risk Engine evaluation → CORE-X execution. If safety criteria are not met, the system chooses NO_TRADE.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 3 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-3">
+                          <span>3. What is the SCSV Router?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-3" class="faq-answer hidden">
+                          <p>SCSV is the deterministic routing layer responsible for understanding and mapping requests to appropriate tools and capabilities before actions reach execution. It performs entity identification, schema validation, and multi-intent routing without holding direct execution authority.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 4 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-4">
+                          <span>4. What is the Risk Engine?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-4" class="faq-answer hidden">
+                          <p>The Risk Engine is the primary financial safety boundary. It independently inspects every proposed trade against account balance, concentration limits, daily loss thresholds, and market data freshness. Proposals result in ALLOW, BLOCK, or REVIEW, enforcing strict fail-closed behavior when data is missing or stale.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 5 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-5">
+                          <span>5. What is CORE-X?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-5" class="faq-answer hidden">
+                          <p>CORE-X is the isolated execution boundary. Its sole responsibility is to translate approved risk-checked proposals into structured brokerage orders with strict idempotency and uncertainty handling. It does not evaluate strategy or overrule the Risk Engine.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 6 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-6">
+                          <span>6. Can the AI bypass risk limits or spend unlimited money?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-6" class="faq-answer hidden">
+                          <p>No. The AI reasoning layer has zero ownership over financial safety boundaries. Hard limits like concentration caps and daily loss halts are immutable and enforced by deterministic code outside the LLM. User settings remain strictly bounded.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 7 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-7">
+                          <span>7. What is the Price Boundary / BMS concept?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-7" class="faq-answer hidden">
+                          <p>The Price Boundary and BMS mechanisms ensure that orders are evaluated against strict mathematical limits and market price bands to prevent catastrophic slippage or fills outside acceptable liquidity tolerances during volatile movements.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 8 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-8">
+                          <span>8. How does Axiom handle Stocks and Options?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-8" class="faq-answer hidden">
+                          <p>Stocks are handled via share-based sizing within risk limits. Options utilize specialized Just-In-Time (JIT) option chain retrieval, near-ATM strike filtering, and liquidity/spread checks to support directional long CALL and long PUT strategies with rigorous contract validation.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 9 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-9">
+                          <span>9. How does the Options decision path work?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-9" class="faq-answer hidden">
+                          <p>Market Event → Option Eligibility Check → JIT Option Chain Retrieval → Bounded Contract Filter (Max 5 NTM strikes) → Quote & Spread Validation (<10% spread) → Contextual Selection → Risk Engine → CORE-X Execution. Invalid or stale quote data causes a safe fail-closed rejection.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 10 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-10">
+                          <span>10. What is NO_TRADE?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-10" class="faq-answer hidden">
+                          <p>NO_TRADE is a first-class, highly valued decision state. Axiom intentionally abstains when evidence is insufficient, confidence is low, market conditions are noisy, or risk parameters cannot be safely met. Preserving capital takes priority over high trading frequency.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 11 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-11">
+                          <span>11. How does the Autonomous Engine work?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-11" class="faq-answer hidden">
+                          <p>The Autonomous Engine operates continuously and event-driven. Upon detecting material market changes via the streaming trigger engine, it builds a context snapshot, evaluates bounded hypotheses, and passes viable proposals through downstream safety gates without requiring continuous manual prompting.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 12 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-12">
+                          <span>12. Does Axiom learn from previous decisions?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-12" class="faq-answer hidden">
+                          <p>Yes. The platform logs outcomes via a Decision Ledger and Outcome Monitor. It updates Bayesian preference weights for each hypothesis across market regimes and automatically suspends strategies experiencing sustained performance drift.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 13 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-13">
+                          <span>13. What is Bayesian learning doing here?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-13" class="faq-answer hidden">
+                          <p>Axiom maintains statistical beliefs about how successful specific trading hypotheses have been under particular market regimes. Better real-world outcomes strengthen a strategy's selection weight, while poor outcomes weaken it within safe architectural bounds.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 14 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-14">
+                          <span>14. What happens when Axiom is uncertain?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-14" class="faq-answer hidden">
+                          <p>The system enters a "Frozen — Uncertainty" state (typically a 60-second safety pause) after runtime policy updates or state transitions. During this window, new autonomous decision admissions are paused while market data, monitoring, and reconciliation remain fully active.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 15 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-15">
+                          <span>15. What happens when runtime settings are changed?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-15" class="faq-answer hidden">
+                          <p>New settings undergo rigorous Pydantic schema validation, are persisted to SQLite, and are atomically swapped via an immutable snapshot. A successful change immediately triggers the 60-second safety pause. Invalid settings are rejected entirely without affecting active operations.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 16 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-16">
+                          <span>16. Is Axiom fully autonomous?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-16" class="faq-answer hidden">
+                          <p>Axiom features an event-driven autonomous decision engine, but autonomy does not mean unrestricted authority. All actions must clear deterministic admission boundaries, risk checks, and protected system limits.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 17 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-17">
+                          <span>17. Does Axiom use an LLM for every market tick?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-17" class="faq-answer hidden">
+                          <p>No. Routine market data and price threshold checks are handled by high-performance deterministic filters. LLM reasoning and deeper context evaluations are invoked only when material events occur, optimizing latency and reliability.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 18 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-18">
+                          <span>18. What happens if market data is missing, stale or invalid?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-18" class="faq-answer hidden">
+                          <p>The system enforces strict fail-closed behavior. If authoritative JIT quotes, SPY prices, or portfolio summaries are stale or missing, the decision controller aborts evaluation or the Risk Engine blocks execution rather than fabricating data.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 19 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-19">
+                          <span>19. How are user settings different from protected system limits?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-19" class="faq-answer hidden">
+                          <p>User-controlled settings allow bounded customization (such as risk-per-trade percentage or max stock quantity) within safe ranges. System-protected limits (such as absolute daily loss halts and concentration caps) are immutable and cannot be overridden by user input.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 20 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-20">
+                          <span>20. How is Axiom different from a simple trading bot?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-20" class="faq-answer hidden">
+                          <p>Simple bots directly convert a signal into an order. Axiom evaluates context, runs bounded hypotheses, reviews evidence, validates risk parameters through independent engines, reconciles fills, and tracks outcomes via adaptive Bayesian learning.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 21 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-21">
+                          <span>21. Does Axiom guarantee profits?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-21" class="faq-answer hidden">
+                          <p>No. No trading architecture can guarantee profits. Axiom's architecture is designed for controlled decision-making, disciplined risk management, and capital preservation, but financial market risk is always present.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 22 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-22">
+                          <span>22. Is Axiom using real market data?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-22" class="faq-answer hidden">
+                          <p>Yes. The platform integrates with live/paper Alpaca market data feeds and JIT option quote endpoints, enforcing fail-closed checks when feeds are disconnected.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 23 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-23">
+                          <span>23. What happens after a trade is executed?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-23" class="faq-answer hidden">
+                          <p>Execution → Broker State Acknowledgment → Reconciliation → Outcome Tracking via Outcome Monitor → Decision Ledger update → Bayesian learning adjustment. Reconciliation ensures the system verifies actual portfolio fills against expected states.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 24 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-24">
+                          <span>24. Is my money automatically controlled by the AI?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-24" class="faq-answer hidden">
+                          <p>No. AI reasoning holds no direct execution authority. Proposals must successfully traverse the Risk Engine and Shared Admission boundary before CORE-X formats and dispatches orders to the broker.</p>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 25 -->
+                    <div class="faq-accordion">
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq-25">
+                          <span>25. What are the main principles behind Axiom?</span>
+                          <span class="faq-arrow">▼</span>
+                        </button>
+                        <div id="faq-25" class="faq-answer hidden">
+                          <p>1. AI for reasoning, not execution authority.<br>
+                             2. Deterministic risk before execution.<br>
+                             3. Fail-closed behavior on missing data.<br>
+                             4. Bounded autonomous behavior.<br>
+                             5. NO_TRADE is a first-class outcome.<br>
+                             6. Strict separation of layers.<br>
+                             7. Adaptive learning via outcome tracking.<br>
+                             8. Isolated CORE-X execution boundary.<br>
+                             9. Specialized option contract validation.<br>
+                             10. Safety takes priority over trade frequency.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MATHEMATICAL METHODS & SAFETY -->
+                <div class="settings-grid" style="margin-top: 24px;">
+                    <div class="settings-card">
+                        <h3>VERIFIED MATHEMATICAL METHODS</h3>
+                        <div style="font-size: 11px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 8px; line-height: 1.5; font-family: var(--font-mono);">
+                            <div>• <strong>Risk Gate Calculations:</strong> Validates exposure limits and drawdown halts.</div>
+                            <div>• <strong>Position Sizing:</strong> Dynamically calculates allowable shares/contracts from risk percentage.</div>
+                            <div>• <strong>BMS / Price Boundary:</strong> Evaluates acceptable execution price limits and quote sanity.</div>
+                            <div>• <strong>Bayesian Posterior Update:</strong> Adjusts strategy confidence weights based on observed outcomes.</div>
+                            <div>• <strong>Contextual Strategy Scoring:</strong> Ranks eligible hypotheses against regime rules.</div>
+                            <div>• <strong>Exposure & Concentration:</strong> Prevents over-allocation into single tickers.</div>
+                            <div>• <strong>Option Contract Validation:</strong> Enforces spread and DTE bounds.</div>
+                        </div>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3>SAFETY BY DESIGN</h3>
+                        <div style="font-size: 11px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 8px; line-height: 1.5;">
+                            <div>Axiom is engineered to reduce unsafe actions through structural isolation. Key safeguards include deterministic risk enforcement, fail-closed handling during data anomalies, isolated CORE-X execution, mandatory reconciliation, and 60-second uncertainty pauses after policy updates.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>       
+
         </main>
         
+        <!-- PROMPT GUIDE -->
+        <div id="prompt-guide" class="prompt-guide">
+            <div class="chat-header">
+                <div class="chat-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                    <h3>Command Reference</h3>
+                </div>
+            </div>
+            
+            <div class="prompt-guide-content">
+                <div class="prompt-guide-note">
+                    Use these verified templates. <strong>Click to copy, then edit before sending.</strong>
+                </div>
+
+                <!-- CATEGORY 1: MARKET & PORTFOLIO -->
+                <div class="prompt-accordion">
+                    <button class="prompt-accordion-btn" aria-expanded="true">
+                        <span>Market & Portfolio</span><span class="faq-arrow">▼</span>
+                    </button>
+                    <div class="prompt-accordion-content">
+                        <button class="prompt-card read-prompt" data-prompt="price of apple stock">
+                            <span class="prompt-type">READ</span><span class="prompt-text">price of apple stock</span>
+                        </button>
+                        <button class="prompt-card read-prompt" data-prompt="Show my current portfolio and buying power.">
+                            <span class="prompt-type">READ</span><span class="prompt-text">Show my current portfolio and buying power.</span>
+                        </button>
+                        <button class="prompt-card read-prompt" data-prompt="What positions do I currently have open?">
+                            <span class="prompt-type">READ</span><span class="prompt-text">What positions do I currently have open?</span>
+                        </button>
+                        <button class="prompt-card read-prompt" data-prompt="Show me all my open orders.">
+                            <span class="prompt-type">READ</span><span class="prompt-text">Show me all my open orders.</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CATEGORY 2: STOCK TRADING (No "shares" word) -->
+                <div class="prompt-accordion">
+                    <button class="prompt-accordion-btn" aria-expanded="true">
+                        <span>Stock Trading (Buy & Sell)</span><span class="faq-arrow">▼</span>
+                    </button>
+                    <div class="prompt-accordion-content">
+                        <button class="prompt-card action-prompt" data-prompt="Place a buy order for 1 Apple stock.">
+                            <span class="prompt-type">ACTION</span><span class="prompt-text">Place a buy order for 1 Apple stock.</span>
+                        </button>
+                        <button class="prompt-card action-prompt" data-prompt="Place a sell order for 5 NVDA stock.">
+                            <span class="prompt-type">ACTION</span><span class="prompt-text">Place a sell order for 5 NVDA stock.</span>
+                        </button>
+                        <button class="prompt-card action-prompt" data-prompt="Close my position in TSLA.">
+                            <span class="prompt-type">ACTION</span><span class="prompt-text">Close my position in TSLA.</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CATEGORY 3: OPTIONS -->
+                <div class="prompt-accordion">
+                    <button class="prompt-accordion-btn" aria-expanded="false">
+                        <span>Options Trading</span><span class="faq-arrow">▼</span>
+                    </button>
+                    <div class="prompt-accordion-content hidden">
+                        <button class="prompt-card action-prompt" data-prompt="Buy 1 AAPL $150 Call.">
+                            <span class="prompt-type">ACTION</span><span class="prompt-text">Buy 1 AAPL $150 Call.</span>
+                        </button>
+                        <button class="prompt-card action-prompt" data-prompt="Open a bear call spread on NVDA: Sell 1 $130 Call and Buy 1 $135 Call.">
+                            <span class="prompt-type">ACTION</span><span class="prompt-text">Open a bear call spread on NVDA: Sell 1 $130 Call and Buy 1 $135 Call.</span>
+                        </button>
+                        <button class="prompt-card action-prompt" data-prompt="Exercise my AAPL options.">
+                            <span class="prompt-type">ACTION</span><span class="prompt-text">Exercise my AAPL options.</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
         <!-- CHAT DRAWER -->
         <div id="chat-drawer" class="chat-drawer">
             <div class="chat-header">

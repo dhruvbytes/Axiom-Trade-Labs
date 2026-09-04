@@ -377,15 +377,53 @@ function updateCorexPanel(meta) {
     }
 }
 
-// --- Chat Drawer Logic ---
+// --- Chat Drawer & Prompt Guide Logic ---
+const promptGuide = document.getElementById('prompt-guide');
+
 function toggleDrawer() {
-    chatDrawer.classList.toggle('open');
+    const isOpen = chatDrawer.classList.toggle('open');
     drawerOverlay.classList.toggle('hidden');
+    
+    // Toggle Prompt Guide simultaneously
+    if (promptGuide) {
+        if (isOpen) {
+            promptGuide.classList.add('open');
+        } else {
+            promptGuide.classList.remove('open');
+        }
+    }
 }
 
 toggleChatBtn.addEventListener('click', toggleDrawer);
 closeChatBtn.addEventListener('click', toggleDrawer);
 drawerOverlay.addEventListener('click', toggleDrawer);
+
+// Prompt Guide Dropdown (Accordion) Logic
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.prompt-accordion-btn');
+    if (!btn) return;
+    
+    const expanded = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', !expanded);
+    const content = btn.nextElementSibling;
+    
+    if (expanded) {
+        content.classList.add('hidden');
+    } else {
+        content.classList.remove('hidden');
+    }
+});
+
+// Click-to-Fill Logic for Prompts
+document.querySelectorAll('.prompt-card').forEach(card => {
+    card.addEventListener('click', () => {
+        const promptText = card.getAttribute('data-prompt');
+        if (promptText && chatInput) {
+            chatInput.value = promptText;
+            chatInput.focus();
+        }
+    });
+});
 
 // Chat implementation (Preserved logic, updated DOM building)
 function addMessage(payload, sender) {
@@ -900,3 +938,72 @@ function startSettingsFreezeTimer(expiresAtUtc) {
         }
     }, 1000);
 }
+
+// =========================================
+// HOW AXIOM WORKS UI & ACCORDION LOGIC
+// =========================================
+
+const navHowItWorksBtn = document.getElementById('nav-how-it-works-btn');
+const howItWorksWorkspace = document.getElementById('how-it-works-workspace');
+
+if (navHowItWorksBtn) {
+    navHowItWorksBtn.addEventListener('click', () => {
+        navHowItWorksBtn.classList.add('active');
+        if (navDashboardBtn) navDashboardBtn.classList.remove('active');
+        if (navAutonomousBtn) navAutonomousBtn.classList.remove('active');
+        if (typeof navSettingsBtn !== 'undefined' && navSettingsBtn) navSettingsBtn.classList.remove('active');
+        
+        if (dashboardWorkspace) dashboardWorkspace.classList.add('hidden');
+        if (autonomousWorkspace) autonomousWorkspace.classList.add('hidden');
+        if (typeof settingsWorkspace !== 'undefined' && settingsWorkspace) settingsWorkspace.classList.add('hidden');
+        if (howItWorksWorkspace) howItWorksWorkspace.classList.remove('hidden');
+    });
+}
+
+// Override other nav items to hide How Axiom Works
+if (navDashboardBtn) {
+    navDashboardBtn.addEventListener('click', () => {
+        if (howItWorksWorkspace) howItWorksWorkspace.classList.add('hidden');
+        if (navHowItWorksBtn) navHowItWorksBtn.classList.remove('active');
+    });
+}
+if (navAutonomousBtn) {
+    navAutonomousBtn.addEventListener('click', () => {
+        if (howItWorksWorkspace) howItWorksWorkspace.classList.add('hidden');
+        if (navHowItWorksBtn) navHowItWorksBtn.classList.remove('active');
+    });
+}
+if (typeof navSettingsBtn !== 'undefined' && navSettingsBtn) {
+    navSettingsBtn.addEventListener('click', () => {
+        if (howItWorksWorkspace) howItWorksWorkspace.classList.add('hidden');
+        if (navHowItWorksBtn) navHowItWorksBtn.classList.remove('active');
+    });
+}
+
+// Google-style Accordion Interaction Handler
+document.addEventListener('click', (e) => {
+    const questionBtn = e.target.closest('.faq-question');
+    if (!questionBtn) return;
+    
+    const expanded = questionBtn.getAttribute('aria-expanded') === 'true';
+    const controlsId = questionBtn.getAttribute('aria-controls');
+    const answerEl = document.getElementById(controlsId);
+    
+    if (!answerEl) return;
+    
+    if (expanded) {
+        questionBtn.setAttribute('aria-expanded', 'false');
+        answerEl.classList.add('hidden');
+    } else {
+        questionBtn.setAttribute('aria-expanded', 'true');
+        answerEl.classList.remove('hidden');
+    }
+});
+
+// Keyboard Accessibility for Accordions (Enter & Space)
+document.addEventListener('keydown', (e) => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('faq-question')) {
+        e.preventDefault();
+        e.target.click();
+    }
+});
