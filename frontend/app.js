@@ -1,23 +1,5 @@
-// 🚀 RELATIVE API URL
-const API_BASE_URL = '/api';
-
-// 🚀 DEMO AUTHENTICATION FLOW
-let demoToken = sessionStorage.getItem('axiom_demo_token');
-if (!demoToken) {
-    demoToken = prompt("Enter Axiom Trade Labs Demo Access Token:");
-    if (demoToken) {
-        sessionStorage.setItem('axiom_demo_token', demoToken);
-    } else {
-        alert("Token is required to access the terminal.");
-    }
-}
-
-// Helper for authorized fetch
-async function authFetch(url, options = {}) {
-    const headers = options.headers || {};
-    headers['Authorization'] = `Bearer ${demoToken}`;
-    return fetch(url, { ...options, headers });
-}
+// Backend URL (FastAPI is running on port 8000)
+const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
 // --- DOM Elements ---
 // HUD
@@ -140,7 +122,7 @@ async function fetchPortfolio() {
 
     refreshBtn.disabled = true;
     try {
-        const response = await authFetch(`${API_BASE_URL}/portfolio`);
+        const response = await fetch(`${API_BASE_URL}/portfolio`);
         if (!response.ok) throw new Error("Failed to fetch portfolio data.");
         
         const data = await response.json();
@@ -199,7 +181,7 @@ function triggerSmartPortfolioUpdate() {
 
 // --- SSE Activity Stream & Workspace Architecture Updates ---
 function setupActivityStream() {
-    const evtSource = new EventSource(`${API_BASE_URL}/activity-stream?token=${encodeURIComponent(demoToken)}`);
+    const evtSource = new EventSource(`${API_BASE_URL}/activity-stream`);
 
     evtSource.onopen = () => {
         // Top HUD Status
@@ -502,7 +484,7 @@ async function handleChatSubmit() {
     chatBox.scrollTop = chatBox.scrollHeight;
 
     try {
-        const response = await authFetch(`${API_BASE_URL}/chat`, {
+        const response = await fetch(`${API_BASE_URL}/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message: message })
@@ -583,7 +565,7 @@ navAutonomousBtn.addEventListener('click', () => {
 // Fetch Authoritative Data
 async function fetchAutonomousState() {
     try {
-        const res = await authFetch(`${API_BASE_URL}/autonomous/dashboard-state`);
+        const res = await fetch(`${API_BASE_URL}/autonomous/dashboard-state`);
         if (!res.ok) return;
         const data = await res.json();
         
@@ -788,7 +770,7 @@ navAutonomousBtn.addEventListener('click', () => {
 // Fetch Settings from Backend (Authoritative State)
 async function fetchSettingsState() {
     try {
-        const res = await authFetch(`${API_BASE_URL}/settings`);
+        const res = await fetch(`${API_BASE_URL}/settings`);
         if (!res.ok) throw new Error("Failed to fetch settings.");
         const data = await res.json();
         
@@ -881,7 +863,7 @@ applySettingsBtn.addEventListener('click', async () => {
     applySettingsBtn.textContent = 'APPLYING...';
     
     try {
-        const res = await authFetch(`${API_BASE_URL}/settings`, {
+        const res = await fetch(`${API_BASE_URL}/settings`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(getDraftPolicy())
@@ -915,7 +897,7 @@ resetSettingsBtn.addEventListener('click', async () => {
     resetSettingsBtn.textContent = 'RESETTING...';
     
     try {
-        const res = await authFetch(`${API_BASE_URL}/settings/reset`, { method: 'POST' });
+        const res = await fetch(`${API_BASE_URL}/settings/reset`, { method: 'POST' });
         if (!res.ok) throw new Error("Reset failed.");
         
         const data = await res.json();

@@ -1,17 +1,15 @@
 # backend/main.py
 
-import os
-from fastapi import APIRouter, FastAPI, HTTPException, Request, Depends
+from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from backend.config import DEMO_ACCESS_TOKEN
 from pydantic import BaseModel
 from typing import List
 from contextlib import asynccontextmanager
 import asyncio
 from backend.execution.journal import execution_journal
 import logging
+from fastapi.staticfiles import StaticFiles
 
 # Import humara custom Alpaca client aur naya AI Agent
 from backend.tool_router.nlu_semantic import semantic_engine
@@ -25,6 +23,12 @@ from backend.autonomous.lifecycle import start_autonomous_system, stop_autonomou
 from backend.autonomous.ui_events import ui_broadcaster
 from backend.autonomous.settings_manager import runtime_policy_manager, RuntimePolicy
 from backend.autonomous.uncertainty import uncertainty_gate
+import time
+import os
+import signal
+
+last_health_ping = time.time()
+client_connected = False
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
@@ -74,12 +78,12 @@ async def lifespan(app_instance: FastAPI):
     print("[4/5] Building Deterministic Asset Trie (Alpaca API)...")
     asset_extractor.build_index()
     print("[OK] Symbology index built successfully.")
-    
-    # STRICT EVENT-DRIVEN IGNITION (No timers)
+
+    # STRICT EVENT-DRIVEN IGNITION
     async def wait_for_ui_and_ignite():
         print("[5/5] System paused. Waiting for Frontend UI to connect...")
         try:
-            # Waits exactly until UI connects (with a 30s fallback for headless testing)
+            # Waits exactly until UI connects
             await asyncio.wait_for(ui_connected_event.wait(), timeout=30.0)
             print("[EVENT] UI Connection Detected! Igniting Autonomous Brain NOW...")
         except asyncio.TimeoutError:
@@ -89,6 +93,19 @@ async def lifespan(app_instance: FastAPI):
         print("[OK] Autonomous Daemon is LIVE.")
 
     asyncio.create_task(wait_for_ui_and_ignite())
+    
+    # NEW: Auto-Shutdown Watchdog Task
+    async def auto_shutdown_watchdog():
+        global last_health_ping, client_connected
+        while True:
+            await asyncio.sleep(2)
+            # Agar frontend connect ho chuka tha aur pichle 12 second se koi ping nahi aaya = Tab closed!
+            if client_connected and (time.time() - last_health_ping > 12):
+                print("\n[SYSTEM] Browser tab closed! Auto-shutting down server...")
+                os.kill(os.getpid(), signal.SIGINT) # Gracefully kill the server
+                break
+
+    asyncio.create_task(auto_shutdown_watchdog())
     
     print("\n[SYSTEM READY] Awaiting Frontend Connection & Autonomous Ignition...\n")
     yield  # Server runs here and accepts the UI connection instantly!
@@ -125,21 +142,8 @@ class PortfolioResponse(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
-
-# 🚀 DEMO AUTHENTICATION FUNCTION
-async def verify_demo_token(request: Request):
-    """Secures all endpoints. Checks header first, fallback to query param for SSE."""
-    token = request.headers.get("Authorization")
-    if not token:
-        token = request.query_params.get("token")
-    else:
-        token = token.replace("Bearer ", "")
-        
-    if token != DEMO_ACCESS_TOKEN:
-        raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing Demo Token")
-
-# 🚀 APPLY AUTH TO SETTINGS ROUTER
-settings_router = APIRouter(prefix="/api/settings", dependencies=[Depends(verify_demo_token)])
+    
+settings_router = APIRouter(prefix="/api/settings")
 
 @settings_router.get("")
 def get_settings():
@@ -177,9 +181,12 @@ app.include_router(settings_router)
 
 @app.get("/api/health")
 def health_check():
+    global last_health_ping, client_connected
+    last_health_ping = time.time()
+    client_connected = True
     return {"status": "ok"}
 
-@app.get("/api/activity-stream", dependencies=[Depends(verify_demo_token)])
+@app.get("/api/activity-stream")
 async def activity_stream(request: Request):
     """
     SSE Endpoint for Live UI Activity Console.
@@ -223,7 +230,7 @@ async def activity_stream(request: Request):
         }
     )
 
-@app.get("/api/portfolio", response_model=PortfolioResponse, dependencies=[Depends(verify_demo_token)])
+@app.get("/api/portfolio", response_model=PortfolioResponse)
 def get_portfolio():
     try:
         summary = alpaca_client.get_portfolio_summary()
@@ -237,7 +244,7 @@ def get_portfolio():
         print(f"Backend Internal Error: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch Alpaca account data.")
 
-@app.post("/api/chat", dependencies=[Depends(verify_demo_token)])
+@app.post("/api/chat")
 async def chat_with_agent(request: ChatRequest):
     try:
         account = alpaca_client.trading_client.get_account()
@@ -266,14 +273,14 @@ async def chat_with_agent(request: ChatRequest):
         print(f"Agent Error: {e}")
         raise HTTPException(status_code=500, detail="Failed to process request.")
 
-@app.get("/api/autonomous/state", dependencies=[Depends(verify_demo_token)])
+@app.get("/api/autonomous/state")
 def get_autonomous_state():
     """Exposes public status snapshot of the bounded autonomous decision controller."""
     from backend.autonomous.lifecycle import get_decision_controller
     controller = get_decision_controller()
     return controller.status_snapshot()
 
-@app.get("/api/autonomous/dashboard-state", dependencies=[Depends(verify_demo_token)])
+@app.get("/api/autonomous/dashboard-state")
 def get_autonomous_dashboard_state():
     from backend.autonomous.lifecycle import get_decision_controller
     from backend.autonomous.decision_ledger import decision_ledger
@@ -292,7 +299,7 @@ def get_autonomous_dashboard_state():
         "recent_learning": decision_ledger.get_recent_outcomes(15)
     }
 
-@app.post("/api/admin/reconciliation/check", dependencies=[Depends(verify_demo_token)])
+@app.post("/api/admin/reconciliation/check")
 async def trigger_admin_reconciliation():
     """Admin-only trigger for uncertainty reconciliation.
 
@@ -304,11 +311,12 @@ async def trigger_admin_reconciliation():
     result = await reconciliation_service.reconcile_observations()
     return {"status": result.status, "reason": result.reason}
 
-# 🚀 MOUNT FRONTEND (Must be at the very bottom after all API routes)
-app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
+# Frontend mount
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
+
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 
 if __name__ == "__main__":
     import uvicorn
-    # 🚀 Railway passes PORT environment variable dynamically
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("backend.main:app", host="0.0.0.0", port=port)
+    uvicorn.run("backend.main:app", host="127.0.0.1", port=8000, reload=True)

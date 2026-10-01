@@ -10,7 +10,7 @@ python -m venv venv
 # Activate on Windows:
 venv\Scripts\activate
 
-# Activate on macOS/Linux:
+# Activate on macOS/Linux/Windows:
 source venv/bin/activate
 
 ```
@@ -36,10 +36,9 @@ GEMINI_API_KEY=your_gemini_api_key_here
 **4. Run the Application**
 
 ```bash
-# Start your backend server and open index.html
+python run.py
 
 ```
-
 **System Overview & Capabilities**
 
 * **Proprietary Engines:** Built entirely from scratch, featuring an **SCSV Router** for deterministic intent parsing, an authoritative **Risk Engine** for safety, and an isolated **CORE-X Execution** boundary.
